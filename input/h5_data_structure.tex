@@ -1,0 +1,71 @@
+\documentclass{article}
+\usepackage{dirtree}
+\usepackage{xcolor}
+\usepackage[hscale=0.8,vscale=0.9]{geometry}
+
+\begin{document}
+
+\section{H5 data structure}
+{
+%\footnotesize
+\large
+\dirtree{%
+.1 H5 file.
+.2 /image\_data/dset\_0 [dataset].
+.2 /image\_data/dset\_0\_sim [group].
+.3 Error norm: Inf norm of nodal residual vector [attribute].
+.3 Tensor notation: Normalized Voigt [11 22 33 12 23 13] [attribute].
+.3 combo\_discretisation: [8.00e+00 8.00e+00 8.00e+00] [attribute].
+.3 combo\_method: ['hadamard'] [attribute].
+.3 combo\_volume\_fraction: [8.00e-01 2.00e-01] [attribute].
+.3 convergence tolerance: [1.00e-10] [attribute].
+.3 data\_format: saved using matlab [attribute].
+.3 element\_formulation: ['hex8'] [attribute].
+.3 element\_integration\_points: 8 [attribute].
+.3 method:  FANS  [attribute].
+.3 original discretisation: [2.56e+02 2.56e+02 2.56e+02] [attribute].
+.3 original volume\_fraction: [8.00e-01 2.00e-01] [attribute].
+.3 vox\_type: ['combo'] [attribute].
+.3    /image\_data/dset\_0\_sim/combo\_idx  [dataset].
+.3    /image\_data/dset\_0\_sim/combo\_vol\_frac0  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{red}eff}\_conductivity\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{red}eff}\_heat\_capacity\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{red}eff}\_stiffness\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{red}eff}\_thermal\_strain\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization}\_mat\_stiffness\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization}\_mat\_thermal\_strain\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization}\_strain\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization}\_strain0\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization}\_strain1\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization\_mat}\_stiffness\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}localization\_mat}\_thermal\_strain\_0300.00  [dataset].
+.3    /image\_data/dset\_0\_sim/\textbf{\color{blue}mat}\_id  [dataset].
+.3    /image\_data/dset\_0\_sim/material\_0300.00 [group].
+.4         conductivity: [4.01e+05 1.73e+05] [attribute].
+.4         elastic\_modulus: [1.30e+08 4.08e+08] [attribute].
+.4         heat\_capacity: [3.41e+03 2.56e+03] [attribute].
+.4         poisson\_ratio: [3.40e-01 2.80e-01] [attribute].
+.4         temperature: [2.93e+02] [attribute].
+.4         thermal\_strain: [0.00e+00 0.00e+00] [attribute].
+}
+}
+
+% {\textbf{stiffness and thermal strain} for each integration point are needed to compute the stress localization operator}
+% mat\_id -> combo discretization
+% {added: strainocalization0, strainocalization1, combo\_idx, combo\_vol\_frac0, mat\_id}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
