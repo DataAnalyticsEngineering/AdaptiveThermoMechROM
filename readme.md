@@ -1,6 +1,4 @@
-[![Actions Status](https://github.com/shadialameddin/del/workflows/Build/badge.svg)](https://github.com/shadialameddin/del/actions)
-
-[![Identifier](https://img.shields.io/badge/doi-10.18419%2Fdarus--2822-d45815.svg)](https://doi.org/10.18419/darus-2822)
+[![Build](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg)](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
 
 # AdaptiveThermoMechROM
 
@@ -13,6 +11,8 @@ We show that the proposed method referred to as optimal field interpolation is o
 ## Requirements
 
 - Python 3.8.5
+- Input dataset: [![Identifier](https://img.shields.io/badge/doi-10.18419%2Fdarus--2822-d45815.svg)](https://doi.org/10.18419/darus-2822)
+
 
 ## How to use?
 
@@ -51,15 +51,10 @@ For details about the setup of the following examples, please refer to the cited
 
 by Shadi Sharba, Julius Herb and Felix Fritzen. Published in *Journal of Elasticity*, DOI ??????. Pre-print available at https://arxiv.org/?????? .
 
-Contact:
-* Shadi Sharba: [email](mailto:shadi.sharba@mib.uni-stuttgart.de)
-* Felix Fritzen: [email](mailto:fritzen@mib.uni-stuttgart.de)
-
-[Research group website](http://www.mib.uni-stuttgart.de/dae)
-
-## Possible extensions
-- Hierarchical sampling could be done first on coarse voxel discretization with normal voexls and with coarse interpolation tests. Then after obtaining the sampling points for each level, fine discretization may be used.
-
+## Contact
+* [Shadi Sharba](mailto:shadi.sharba@mib.uni-stuttgart.de)
+* [Felix Fritzen](mailto:fritzen@mib.uni-stuttgart.de)
+* [Research group website](http://www.mib.uni-stuttgart.de/dae)
 
 ## Acknowledgments
 - The IGF-Project with the IGF-No.: 21079 N / DVS-No.: 06.3341 of the “Forschungsvereinigung Schweißen und verwandte Verfahren e. V.” of the German Welding Society (DVS), Aachener Str. 172, 40223 Düsseldorf was funded by the Federal Ministry for Economic Affairs and Climate Action (BMWK) via the German Federation of Industrial Research Associations (AiF) in accordance with the policy to support the Industrial Collective Research (IGF) on the basis of a decision by the German Bundestag. Furthermore, the authors gratefully acknowledge the collaboration with the members of the project affiliated committee regarding the support of knowledge, material and equipment over the course of the research.
