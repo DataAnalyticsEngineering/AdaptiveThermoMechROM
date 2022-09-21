@@ -42,9 +42,6 @@ For details about the setup of the following examples, please refer to the cited
 - `eg4_hierarchical_sampling_efficient.py`
   Same as `eg3_hierarchical_sampling.py` but more efficient due to exploitation of affine structure of the proposed interpolation scheme.  
 
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://shadisharba-adaptivethermomechrom-j45xvpp5vpvh57pg.github.dev/)
-
 <!-- https://mybinder.readthedocs.io/en/latest/using/config_files.html -->
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/shadisharba/AdaptiveThermoMechROM/HEAD)
 
