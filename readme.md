@@ -1,4 +1,4 @@
-[![Build](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg)](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
+[![Build](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg?branch=main)](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
 
 # AdaptiveThermoMechROM
 
