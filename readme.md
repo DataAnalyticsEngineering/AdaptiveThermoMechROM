@@ -1,3 +1,7 @@
+<!--
+https://docs.github.com/en/actions/quickstart
+https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+ -->
 [![Build](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg?branch=main)](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
 
 # AdaptiveThermoMechROM
@@ -39,11 +43,7 @@ For details about the setup of the following examples, please refer to the cited
   Same as `eg3_hierarchical_sampling.py` but more efficient due to exploitation of affine structure of the proposed interpolation scheme.  
 
 <!-- https://mybinder.readthedocs.io/en/latest/using/config_files.html -->
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/shadialameddin/del/HEAD)
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shadialameddin/del/blob/HEAD/index.ipynb)
-- `image_processing.py` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shadialameddin/pyminirom/blob/master/examples/0_intro_using_mnist.ipynb)
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/shadisharba/AdaptiveThermoMechROM/HEAD)
 
 ## Manuscript
 
