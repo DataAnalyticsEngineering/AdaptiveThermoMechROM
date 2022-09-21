@@ -278,48 +278,6 @@ def reverse_cholesky(array):
         C = np.squeeze(C, axis=0)
     return C
 
-def inv_cholesky(array):
-    L_tril = tril_cholesky(array)
-    return torch.linalg.inv(L_tril)
-
-def unsqueeze(output, target):
-    if output.dim() == 1:
-        output = torch.unsqueeze(output, 0)
-    if target.dim() == 1:
-        target = torch.unsqueeze(target, 0)
-    return output, target
-
-def stiffness_loss(output, target, reduction='mean'):
-    output, target = unsqueeze(output, target)
-    L, L_pred = (target, output[:,:21]) if target.size(1) == 21 else (target[:,:21], output[:,:21])
-    C, C_pred = reverse_cholesky(L), reverse_cholesky(L_pred)
-    #assert torch.allclose(torch.linalg.cholesky(C), tril_cholesky(L))
-    #loss = (torch.linalg.norm(L - L_pred, dim=1) / torch.linalg.norm(L, dim=1))**2
-    invL = inv_cholesky(L)
-    C_star = torch.einsum('nij,njk,nlk->nil', invL, C_pred, invL)  # Einstein summation of invL @ C_pred @ invL.T
-    #L_tril = tril_cholesky(L)
-    #C_star2 = torch.linalg.solve_triangular(L_tril, torch.linalg.solve_triangular(L_tril.transpose(1,2), C_pred, left=False, upper=True), upper=False)
-    I = torch.eye(6).repeat(target.size(0), 1, 1)
-    loss = torch.linalg.norm(C_star - I, dim=[1,2]) / torch.linalg.norm(I, dim=[1,2])
-    #loss2 = torch.linalg.norm(C_star2 - I, dim=[1,2]) / torch.linalg.norm(I, dim=[1,2])
-    #assert torch.allclose(loss1, loss2)
-    return torch.mean(loss)
-
-def thermal_strain_loss(output, target, reduction='mean'):
-    output, target = unsqueeze(output, target)
-    eps, eps_pred = (target, output[:,:6]) if target.size(1) == 6 else (target[:,21:27], output[:,21:27])
-    loss = torch.linalg.norm(eps - eps_pred, dim=1) / torch.linalg.norm(eps, dim=1)
-    return torch.mean(loss)
-    
-def mech_loss(output, target, reduction='mean'):
-    output, target = unsqueeze(output, target)
-    L, L_pred = target[:,:21], output[:,:21]
-    eps, eps_pred = target[:,21:27], output[:,21:27]
-    loss1 = stiffness_loss(L_pred, L, reduction)
-    loss2 = thermal_strain_loss(eps_pred, eps, reduction)
-    #print(loss1, loss2)
-    return loss1 + loss2
-
 def get_data(data_loader, device='cpu'):
     x_list, y_list = [], []
     for x_batch, y_batch in list(data_loader):
@@ -458,3 +416,47 @@ def hierarchical_sampling(dset, x, sampling_points, validation=False):
     val_idx = set(np.random.randint(low=1, high=len(dset), size=len(train_idx) - 1)).difference(train_idx)
     val_data = TensorDataset(*dset[val_idx]) if validation else train_data
     return train_data, val_data
+
+# ANN extension to use different error measures
+
+# def inv_cholesky(array):
+#     L_tril = tril_cholesky(array)
+#     return torch.linalg.inv(L_tril)
+
+# def unsqueeze(output, target):
+#     if output.dim() == 1:
+#         output = torch.unsqueeze(output, 0)
+#     if target.dim() == 1:
+#         target = torch.unsqueeze(target, 0)
+#     return output, target
+
+# def stiffness_loss(output, target, reduction='mean'):
+#     output, target = unsqueeze(output, target)
+#     L, L_pred = (target, output[:,:21]) if target.size(1) == 21 else (target[:,:21], output[:,:21])
+#     C, C_pred = reverse_cholesky(L), reverse_cholesky(L_pred)
+#     #assert torch.allclose(torch.linalg.cholesky(C), tril_cholesky(L))
+#     #loss = (torch.linalg.norm(L - L_pred, dim=1) / torch.linalg.norm(L, dim=1))**2
+#     invL = inv_cholesky(L)
+#     C_star = torch.einsum('nij,njk,nlk->nil', invL, C_pred, invL)  # Einstein summation of invL @ C_pred @ invL.T
+#     #L_tril = tril_cholesky(L)
+#     #C_star2 = torch.linalg.solve_triangular(L_tril, torch.linalg.solve_triangular(L_tril.transpose(1,2), C_pred, left=False, upper=True), upper=False)
+#     I = torch.eye(6).repeat(target.size(0), 1, 1)
+#     loss = torch.linalg.norm(C_star - I, dim=[1,2]) / torch.linalg.norm(I, dim=[1,2])
+#     #loss2 = torch.linalg.norm(C_star2 - I, dim=[1,2]) / torch.linalg.norm(I, dim=[1,2])
+#     #assert torch.allclose(loss1, loss2)
+#     return torch.mean(loss)
+
+# def thermal_strain_loss(output, target, reduction='mean'):
+#     output, target = unsqueeze(output, target)
+#     eps, eps_pred = (target, output[:, :6]) if target.size(1) == 6 else (target[:, 21:27], output[:, 21:27])
+#     loss = torch.linalg.norm(eps - eps_pred, dim=1) / torch.linalg.norm(eps, dim=1)
+#     return torch.mean(loss)
+
+# def mech_loss(output, target, reduction='mean'):
+#     output, target = unsqueeze(output, target)
+#     L, L_pred = target[:, :21], output[:, :21]
+#     eps, eps_pred = target[:, 21:27], output[:, 21:27]
+#     loss1 = stiffness_loss(L_pred, L, reduction)
+#     loss2 = thermal_strain_loss(eps_pred, eps, reduction)
+#     #print(loss1, loss2)
+#     return loss1 + loss2
