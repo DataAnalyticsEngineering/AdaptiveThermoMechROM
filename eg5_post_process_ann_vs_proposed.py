@@ -44,7 +44,7 @@ for level in range(n_hierarchical_levels):
             annC[idx, level] = file[f'{data_path}_level{level}/eff_stiffness_{temperature:07.2f}'][:]
             ann_eps[idx, level] = file[f'{data_path}_level{level}/eff_thermal_strain_{temperature:07.2f}'][:]
 
-#%%
+# %%
 err_eff_C_opt = np.zeros((n_tests, n_hierarchical_levels))
 err_eff_eps_opt = np.zeros((n_tests, n_hierarchical_levels))
 
@@ -56,7 +56,6 @@ err_energy = lambda x, y, C: (y @ C @ y - x @ C @ x) / (y @ C @ y) * 100
 
 for level in range(n_hierarchical_levels):
     for idx, temperature in enumerate(test_temperatures):
-
         invL = la.inv(la.cholesky(refC[idx]))
 
         err_eff_C_opt[idx, level] = la.norm(invL @ optC[idx, level] @ invL.T - np.eye(6)) / la.norm(np.eye(6)) * 100
@@ -68,7 +67,7 @@ for level in range(n_hierarchical_levels):
         # err_eff_eps_opt[idx, level] = err_energy(opt_eps[idx, level], ref_eps[idx], refC[idx])
         # err_eff_eps_ann[idx, level] = err_energy(ann_eps[idx, level], ref_eps[idx], refC[idx])
 
-#%%
+# %%
 level = 4
 
 xlabel = 'Temperature [K]'
@@ -99,7 +98,7 @@ plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 # plot_and_save(xlabel, ylabel, fig_name, [temp1, temp2], [0, 1.5], loc='upper right')
 plot_and_save(xlabel, ylabel, fig_name, [temp1, temp2], [0, 2.2], loc='upper right')
 
-#%%
+# %%
 ylabel = r'Relative error $e_{\overline{\boldmath{\varepsilon}}_{\uptheta}}$ [\%]'
 fig_name = f'eg5_{ms_id}_hierarchical_sampling_err_eff_thermal_strain'
 fig, ax = plt.subplots(figsize=(6 * cm, 6 * cm), dpi=600)

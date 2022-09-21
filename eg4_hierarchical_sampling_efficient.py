@@ -149,7 +149,7 @@ for ms_id in [7, 8, 9]:
             # group.attrs['sampling_strategy'] = "model description"
             temperature = test_temperatures[idx]
             dset_stiffness = group.require_dataset(f'eff_stiffness_{temperature:07.2f}', (6, 6), dtype='f')
-            dset_thermal_strain = group.require_dataset(f'eff_thermal_strain_{temperature:07.2f}', (6, ), dtype='f')
+            dset_thermal_strain = group.require_dataset(f'eff_thermal_strain_{temperature:07.2f}', (6), dtype='f')
             dset_stiffness[:] = Capprox.T
             dset_thermal_strain[:] = la.solve(Capprox, effSopt[:, -1])
 

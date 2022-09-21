@@ -71,7 +71,7 @@ def opt4(sampling_C, sampling_eps, ref_C, ref_eps):
     opt_eps = np.empty_like(ref_eps)
     interpolate = lambda alpha, x1, x2: x1 + alpha * (x2 - x1)
     explicit_minimizer = lambda Cr, C1, C2: ((Cr - C1).flatten() @ (C2 - C1).flatten()) / (
-        (C2 - C1).flatten() @ (C2 - C1).flatten())
+            (C2 - C1).flatten() @ (C2 - C1).flatten())
 
     for idx, (C_samples, eps_samples, C_ref, eps_ref) in enumerate(zip(sampling_C, sampling_eps, ref_C, ref_eps)):
         opt_alpha_C = explicit_minimizer(C_ref, *C_samples)
@@ -84,7 +84,7 @@ def opt4_alphas(sampling_C, sampling_eps, ref_C, ref_eps):
     opt_alpha_C = np.empty(ref_C.shape[0])
     opt_alpha_eps = np.empty(ref_eps.shape[0])
     explicit_minimizer = lambda Cr, C1, C2: ((Cr - C1).flatten() @ (C2 - C1).flatten()) / (
-        (C2 - C1).flatten() @ (C2 - C1).flatten())
+            (C2 - C1).flatten() @ (C2 - C1).flatten())
 
     for idx, (C_samples, eps_samples, C_ref, eps_ref) in enumerate(zip(sampling_C, sampling_eps, ref_C, ref_eps)):
         opt_alpha_C[idx] = explicit_minimizer(C_ref, *C_samples)

@@ -6,7 +6,7 @@ from utilities import verify_data, read_h5
 def test_read_simple_microstructure():
     """
     Load a microstructure and try to reconstruct stress and strain fields and effective properties
-    """    
+    """
 
     file_name, data_path, temp1, temp2 = itemgetter('file_name', 'data_path', 'temp1', 'temp2')(microstructures[0])
 

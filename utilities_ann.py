@@ -12,6 +12,7 @@ class BaseModule(nn.Module):
     All modules should inherit from :class:`mlprum.models.BaseModule` and override :meth:`mlprum.models.BaseModule.forward`.
     The Base Module itself inherits from :class:`torch.nn.Module`. See the `PyTorch` documentation for further information.
     """
+
     def __init__(self):
         """Constructor of the class. Initialize the Base Module.
 
@@ -139,6 +140,7 @@ class FFModule(BaseModule):
         >>> y_pred = model(x) # model prediction
 
     """
+
     def __init__(self, in_dim, neurons, activations, out_activation, out_dim, prepare_fn=None):
         """Constructor of the class. Initialize a feedforward neural network with given neuron counts and activation functions.
 
@@ -216,6 +218,7 @@ class RectFFModule(FFModule):
         >>> y_pred = model(x) # model prediction
 
     """
+
     def __init__(self, in_dim, neuron_count, layer_count, activation, out_activation, out_dim, prepare_fn=None):
         """Constructor of the class. Initialize the neural network with given neuron count, layer count and activation functions.
 
@@ -393,7 +396,7 @@ def bisection_sampling(dset, levels=0, samples_per_pos=1, validation=False):
     :rtype: tuple of PyTorch Datasets
     """
     max_idx = len(dset) - samples_per_pos
-    idx = torch.linspace(0, max_idx, 1 + 2**(levels + 1), dtype=int)
+    idx = torch.linspace(0, max_idx, 1 + 2 ** (levels + 1), dtype=int)
     train_idx = idx[::2]
     val_idx = idx[1::2] if validation else idx[::2]
     train_idx_all = torch.cat([train_idx + i for i in range(samples_per_pos)])

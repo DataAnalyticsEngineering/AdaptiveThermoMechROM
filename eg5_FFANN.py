@@ -114,7 +114,7 @@ for ms_id in [7, 8, 9]:
         # group.attrs['sampling_strategy'] = "model description"
         for i, ref in enumerate(refs):
             dset_stiffness = group.require_dataset(f'eff_stiffness_{test_temperatures[i]:07.2f}', (6, 6), dtype='f')
-            dset_thermal_strain = group.require_dataset(f'eff_thermal_strain_{test_temperatures[i]:07.2f}', (6, ), dtype='f')
+            dset_thermal_strain = group.require_dataset(f'eff_thermal_strain_{test_temperatures[i]:07.2f}', (6), dtype='f')
 
             C = reverse_cholesky(y_approx[i, :21])
             eps = y_approx[i, 21:]

@@ -36,7 +36,7 @@ for file in files:
         obj.visititems(get_node_info)
     # print(datasets)
 
-    #%% Write xml/xdmf file
+    # %% Write xml/xdmf file
     dim = '{} {} {}'.format(*datasets[0][1])
 
     xdmf = et.Element('Xdmf')

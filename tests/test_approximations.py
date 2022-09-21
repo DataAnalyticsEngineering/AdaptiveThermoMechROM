@@ -13,7 +13,8 @@ from utilities import read_h5, construct_stress_localization, volume_average, pl
 
 def test_approximations():
     np.random.seed(0)
-    file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
+    file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2',
+                                                                              'n_tests',
                                                                               'sampling_alphas')(microstructures[0])
     print(file_name, '\t', data_path)
 
@@ -116,7 +117,8 @@ def test_approximations():
             residuals = compute_residual_efficient([stress_naive, stress_opt0, stress_opt1, stress_opt2, stress_opt4],
                                                    mesh['global_gradient'])
 
-            err_f[:, idx * n_loading_directions + strain_idx] = la.norm(residuals, np.inf, axis=0) / normalization_factor_mech * 100
+            err_f[:, idx * n_loading_directions + strain_idx] = la.norm(residuals, np.inf,
+                                                                        axis=0) / normalization_factor_mech * 100
 
     for idx in range(n_approaches):
         x, y = ecdf(err_f[idx])
@@ -130,8 +132,8 @@ def test_approximations():
         print(f'{np.max(err_eff_stress,axis=1) = }')
 
     # check results that correspond to opt4
-    assert np.max(err_f,axis=1)[-1] < 1e-11
-    assert np.max(err_E,axis=1)[-1] < 1e-11
-    assert np.max(err_S,axis=1)[-1] < 1e-11
-    assert np.max(err_eff_S,axis=1)[-1] < 1e-11
-    assert np.max(err_eff_stress,axis=1)[-1] < 1e-11
+    assert np.max(err_f, axis=1)[-1] < 1e-11
+    assert np.max(err_E, axis=1)[-1] < 1e-11
+    assert np.max(err_S, axis=1)[-1] < 1e-11
+    assert np.max(err_eff_S, axis=1)[-1] < 1e-11
+    assert np.max(err_eff_stress, axis=1)[-1] < 1e-11
