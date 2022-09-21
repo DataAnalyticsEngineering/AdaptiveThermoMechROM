@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.linalg as la
 
 def naive(alpha, sampling_C, sampling_eps, ref_C, ref_eps):
     opt_C = np.empty_like(ref_C)

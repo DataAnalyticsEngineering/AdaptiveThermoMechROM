@@ -1,6 +1,6 @@
-import numpy as np
-from microstructures import *
 from operator import itemgetter
+
+from microstructures import *
 from utilities import verify_data, read_h5
 
 def test_read_simple_microstructure():

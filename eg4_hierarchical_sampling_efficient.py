@@ -1,15 +1,13 @@
-import h5py
-import numpy as np
-import numpy.linalg as la
-import matplotlib.pyplot as plt
 from operator import itemgetter
-from matplotlib.ticker import FormatStrFormatter
+
+import h5py
+import numpy.linalg as la
 
 from interpolate_fluctuation_modes import update_affine_decomposition, effective_S, effective_stress_localization, \
     interpolate_fluctuation_modes, get_phi, transform_strain_localization
 from microstructures import *
-from optimize_alpha import opt4_alphas, opt4
-from utilities import read_h5, construct_stress_localization, volume_average, plot_and_save, cm, compute_err_indicator_efficient
+from optimize_alpha import opt4_alphas
+from utilities import read_h5, construct_stress_localization, compute_err_indicator_efficient
 
 np.random.seed(0)
 # np.set_printoptions(precision=3)

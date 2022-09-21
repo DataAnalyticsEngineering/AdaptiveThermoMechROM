@@ -4,9 +4,10 @@ The units here differ from the paper cited in readme.md by converting meter to m
 The example after `if __name__ == "__main__"` uses meter again and it matches the paper
 """
 
-import scipy.integrate as integrate
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy.integrate as integrate
+
 from utilities import cm
 
 I2 = np.asarray([1., 1., 1., 0, 0, 0])

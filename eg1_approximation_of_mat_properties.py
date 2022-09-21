@@ -1,9 +1,8 @@
 """
 Approximate material properties using various affine approaches
 """
-import numpy as np
 import numpy.linalg as la
-import matplotlib.pyplot as plt
+
 from material_parameters import *
 from optimize_alpha import naive, opt1, opt2, opt4
 from utilities import plot_and_save, cm

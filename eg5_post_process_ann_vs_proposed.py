@@ -1,13 +1,13 @@
 # %%
-import h5py
-import numpy as np
-import numpy.linalg as la
-import matplotlib.pyplot as plt
-from utilities import plot_and_save, cm, read_h5
-from matplotlib.ticker import FormatStrFormatter
 from operator import itemgetter
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy.linalg as la
+from matplotlib.ticker import FormatStrFormatter
+
 from microstructures import *
-from utilities import read_h5, construct_stress_localization, volume_average, plot_and_save, cm, compute_err_indicator_efficient
+from utilities import plot_and_save, cm
 
 n_hierarchical_levels = 5
 ms_id = 9

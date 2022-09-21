@@ -1,10 +1,10 @@
-import matplotlib.pyplot as plt
-import torch
-import numpy as np
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
-
 import copy
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from torch import nn
+from torch.utils.data import TensorDataset
 
 class BaseModule(nn.Module):
     """Represents a `Base Module` that contains the basic functionality of an artificial neural network (ANN).

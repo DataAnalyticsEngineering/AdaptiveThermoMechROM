@@ -1,13 +1,12 @@
 import contextlib
-import timeit
 
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as la
-import matplotlib.pyplot as plt
 import scipy.sparse
+from numba import jit, prange
 from sympy import symbols, lambdify, Array
-from numba import jit, njit, prange, vectorize, prange
 
 plt.rcParams.update({
     'font.size': 8,

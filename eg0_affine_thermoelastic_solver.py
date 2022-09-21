@@ -2,10 +2,9 @@
 Load all microstructures and try to reconstruct stress and strain fields and effective properties
 """
 
-import numpy as np
-from microstructures import *
 from operator import itemgetter
 
+from microstructures import *
 from utilities import verify_data, read_h5
 
 for microstructure in microstructures:

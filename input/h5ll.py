@@ -1,5 +1,5 @@
-import h5py
 import fire
+import h5py
 
 def print_attributes(node, shift):
     for key, val in node.attrs.items():

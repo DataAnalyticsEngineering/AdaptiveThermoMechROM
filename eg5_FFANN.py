@@ -1,18 +1,19 @@
 # %%
 # # JEL_thermo-el-ROM: Machine Learned Model
 # ### Imports:
+from operator import itemgetter
+
 import h5py
-import numpy as np
+import matplotlib.cm as colormap
+import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
-import matplotlib.pyplot as plt
-import matplotlib.cm as colormap
-from operator import itemgetter
+
 from microstructures import *
 from utilities import read_h5
-from utilities_ann import cholesky, reverse_cholesky, bisection_sampling, hierarchical_sampling, RectFFModule, model_training, \
-    plot_training_history, mech_loss
+from utilities_ann import cholesky, reverse_cholesky, hierarchical_sampling, RectFFModule, model_training, \
+    plot_training_history
 
 torch.set_default_dtype(torch.float32)
 # ### Load DNS data from HDF5 file:

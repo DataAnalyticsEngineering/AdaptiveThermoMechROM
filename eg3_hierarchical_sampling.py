@@ -1,15 +1,15 @@
 """
 Test hierarchical sampling on RVE with octahedral inclusion
 """
-import numpy as np
-import numpy.linalg as la
-import matplotlib.pyplot as plt
 from operator import itemgetter
+
+import numpy.linalg as la
+
+from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
 from optimize_alpha import opt4
-from interpolate_fluctuation_modes import interpolate_fluctuation_modes
-from utilities import read_h5, construct_stress_localization, volume_average, plot_and_save, cm, compute_err_indicator, \
-    compute_residual, compute_residual_efficient, compute_err_indicator_efficient
+from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient, \
+    compute_err_indicator_efficient
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',

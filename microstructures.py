@@ -1,5 +1,6 @@
-import numpy as np
 from pathlib import Path as path
+
+import numpy as np
 
 microstructures = [{
     'data_path': '/ms_1p/dset0_sim',

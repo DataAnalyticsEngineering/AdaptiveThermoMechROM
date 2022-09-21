@@ -1,15 +1,14 @@
 """
 Test a straightforward implementation of all approaches
 """
-import numpy as np
-import numpy.linalg as la
-import matplotlib.pyplot as plt
 from operator import itemgetter
+
+import numpy.linalg as la
+
+from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
 from optimize_alpha import opt1, opt2, opt4, naive
-from interpolate_fluctuation_modes import interpolate_fluctuation_modes
-from utilities import read_h5, construct_stress_localization, volume_average, plot_and_save, cm, compute_residual, \
-    compute_residual_efficient, ecdf
+from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient, ecdf
 
 def test_approximations():
     np.random.seed(0)

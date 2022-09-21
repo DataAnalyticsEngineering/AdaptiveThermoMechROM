@@ -11,8 +11,9 @@ Improvement: this writer may be extended to allow from FEM mesh visualization, c
 https://www.xdmf.org/index.php/XDMF_Model_and_Format
 """
 import xml.etree.ElementTree as et
-import h5py
 from pathlib import Path as path
+
+import h5py
 
 def get_node_info(name, node):
     """
