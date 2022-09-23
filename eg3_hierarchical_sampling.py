@@ -60,22 +60,27 @@ for level in range(n_hierarchical_levels):
         sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
 
         # reference values
+        Eref = ref[idx]['strain_localization']
         ref_C = ref[idx]['mat_stiffness']
         ref_eps = ref[idx]['mat_thermal_strain']
+        plastic_modes = ref[idx]['plastic_modes']
         normalization_factor_mech = ref[idx]['normalization_factor_mech']
-        effSref = np.vstack((ref[idx]['eff_stiffness'], -ref[idx]['eff_stiffness'] @ ref[idx]['eff_thermal_strain'])).T
+        Sref = construct_stress_localization(Eref, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
+        effSref = volume_average(Sref)
+        # effSref = np.vstack((ref[idx]['eff_stiffness'], -ref[idx]['eff_stiffness'] @ ref[idx]['eff_thermal_strain'])).T
 
         # interpolated quantities using an implicit interpolation scheme with four DOF
         approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
-        Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, mat_id, n_gauss, strain_dof, n_modes, n_gp)
-        Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+        Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                                 n_gp)
+        Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
         effSopt = volume_average(Sopt4)
 
         err_indicators[level, idx] = np.mean(np.max(np.abs(compute_err_indicator_efficient(Sopt4, global_gradient)),
                                                     axis=0)) / normalization_factor_mech * 100
 
         for strain_idx, strain in enumerate(strains):
-            zeta = np.hstack((strain, 1))
+            zeta = np.hstack((strain, 1, np.ones(plastic_modes.shape[-1])))
             stress_opt4 = np.einsum('ijk,k', Sopt4, zeta, optimize='optimal')
             residual = compute_residual_efficient(stress_opt4, global_gradient)
 
@@ -89,11 +94,11 @@ for level in range(n_hierarchical_levels):
         invL = la.inv(la.cholesky(Cref))
         err_eff_C[level, idx] = la.norm(invL @ Capprox @ invL.T - np.eye(6)) / la.norm(np.eye(6)) * 100
 
-        err_eff_eps[level, idx] = err(la.solve(Capprox, effSopt[:, -1]), la.solve(Cref, effSref[:, -1]))
+        err_eff_eps[level, idx] = err(la.solve(Capprox, effSopt[:, 7]), la.solve(Cref, effSref[:, 7]))
 
     # max_err_idx = np.argmax(np.mean(err_nodal_force[level], axis=1))
     max_err_idx = np.argmax(err_indicators[level])
-    alpha_levels.append(np.sort(np.hstack((alphas, test_alphas[max_err_idx]))))
+    alpha_levels.append(np.unique(np.sort(np.hstack((alphas, test_alphas[max_err_idx])))))
     print(f'{np.max(np.mean(err_nodal_force[level], axis=1)) = }')
     print(f'{np.max(err_indicators[level]) = }')
 
