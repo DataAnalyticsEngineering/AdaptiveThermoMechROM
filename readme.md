@@ -2,9 +2,9 @@
 https://docs.github.com/en/actions/quickstart
 https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
  -->
-[![Build](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg?branch=main)](https://github.com/shadisharba/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
+[![Build](https://github.com/DataAnalyticsEngineering/AdaptiveThermoMechROM/actions/workflows/github-actions.yml/badge.svg?branch=main)](https://github.com/DataAnalyticsEngineering/AdaptiveThermoMechROM/actions/workflows/github-actions.yml)
 
-# AdaptiveThermoMechROM
+# [AdaptiveThermoMechROM](https://github.com/DataAnalyticsEngineering/AdaptiveThermoMechROM)
 
 An adaptive approach for strongly temperature-dependent thermoelastic homogenization. Using direct numerical simulations at few
 discrete temperatures, an energy optimal basis is constructed to be used at any intermediate temperature in real-time.
@@ -54,7 +54,7 @@ For details about the setup of the following examples, please refer to the cited
   scheme.
 
 <!-- https://mybinder.readthedocs.io/en/latest/using/config_files.html -->
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/shadisharba/AdaptiveThermoMechROM/HEAD)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/DataAnalyticsEngineering/AdaptiveThermoMechROM/HEAD)
 
 ## Manuscript
 
