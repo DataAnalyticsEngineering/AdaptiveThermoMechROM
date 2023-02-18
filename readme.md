@@ -23,6 +23,8 @@ route and show their limitations in view of both accuracy and the amount of requ
 - Input
   dataset: [![Identifier](https://img.shields.io/badge/doi-10.18419%2Fdarus--2822-d45815.svg)](https://doi.org/10.18419/darus-2822)
 
+All necessary data can be downloaded from [DaRUS](https://darus.uni-stuttgart.de/) using the script `download_data.sh`.
+
 ## How to use?
 
 The provided code is independent of direct numerical simulators, i.e. it expects DNS results to be stored in a HDF5 file with a
