@@ -1,5 +1,5 @@
 """
-Interpolate the homenized response (i.e. effective C and effictive eps) at arbitrary temperatures
+Interpolate the homogenized response (i.e. effective C and effictive eps) at arbitrary temperatures
 based on the approximations in eg3_hierarchical_sampling.py or eg4_hierarchical_sampling_efficient.py
 """
 # %%
