@@ -12,7 +12,7 @@ from utilities import read_h5, construct_stress_localization, compute_err_indica
 np.random.seed(0)
 # np.set_printoptions(precision=3)
 
-for ms_id in [7, 8, 9]:
+for ms_id in [6, 7, 8, 9]:
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2',
                                                                               'n_tests',
                                                                               'sampling_alphas')(microstructures[ms_id])
