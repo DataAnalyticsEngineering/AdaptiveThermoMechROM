@@ -62,7 +62,7 @@ For details about the setup of the following examples, please refer to the cited
   Compared the results of the trained ANNs with our proposed interpolation scheme.
 
 - [`eg7_staggered_model_interpolation.py`](eg7_staggered_model_interpolation.py):
-  Interpolate the homenized response at arbitrary temperatures based on the approximations in [`eg3_hierarchical_sampling.py`](eg3_hierarchical_sampling.py) or [`eg4_hierarchical_sampling_efficient.py`](eg4_hierarchical_sampling_efficient.py)
+  Interpolate the homogenized response at arbitrary temperatures based on the approximations in [`eg3_hierarchical_sampling.py`](eg3_hierarchical_sampling.py) or [`eg4_hierarchical_sampling_efficient.py`](eg4_hierarchical_sampling_efficient.py)
 
 <!-- https://mybinder.readthedocs.io/en/latest/using/config_files.html -->
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/DataAnalyticsEngineering/AdaptiveThermoMechROM/HEAD)
