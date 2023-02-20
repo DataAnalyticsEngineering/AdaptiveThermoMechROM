@@ -12,6 +12,7 @@ https://www.xdmf.org/index.php/XDMF_Model_and_Format
 """
 import xml.etree.ElementTree as et
 from pathlib import Path as path
+import glob
 
 import h5py
 
@@ -26,11 +27,12 @@ def get_node_info(name, node):
         if '_L' not in node.name and '_sim' not in node.name:
             datasets.append([node.name, node.shape])
 
-files = ['octahedron_combo_32x32x32.h5']
+files = glob.glob('*.h5')
 
 for file in files:
     input_file = path(file)
     output_file = input_file.with_suffix('.xdmf')
+    print(f'Create {output_file} based on {input_file}')
 
     datasets = []
     with h5py.File(input_file, 'r') as obj:
