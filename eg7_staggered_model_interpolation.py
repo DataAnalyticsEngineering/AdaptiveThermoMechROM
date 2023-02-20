@@ -1,5 +1,5 @@
 """
-Interpolate the homogenized response (i.e. effective C and effictive eps) at arbitrary temperatures
+Interpolate the homogenized response (i.e. effective C and effective eps) at arbitrary temperatures
 based on the approximations in eg3_hierarchical_sampling.py or eg4_hierarchical_sampling_efficient.py
 """
 # %%
@@ -14,7 +14,7 @@ load_start = time.time()
 ms_id = 6
 level = 4
 file_name, data_path, temp1, temp2, n_samples, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[ms_id])
+                                                                            'sampling_alphas')(microstructures[ms_id])
 opt_file = path(f'output/opt_{file_name.name}')
 print(f'Loading precomputed data from {file_name}\t{data_path}')
 
@@ -29,12 +29,13 @@ try:
             opt_C[idx] = file[f'{data_path}_level{level}/eff_stiffness_{temperature:07.2f}'][:]
             opt_eps[idx] = -file[f'{data_path}_level{level}/eff_thermal_strain_{temperature:07.2f}'][:]
 except Exception:
-    print(f'Could not load precomputed data. Run eg3_*.py or eg4_*.py for ms_id={ms_id} first.')
+    print(f'Could not load precomputed data. Run eg4_*.py first for ms_id={ms_id}, level={level}.')
     exit()
 
 load_time = time.time() - load_start
 print(f'Loaded precomputed data at {n_samples} temperatures in {load_time:.5f} s')
 
+# %%
 # Online stage: linear interpolation between sampled data
 online_start = time.time()
 n_tests = 1000
@@ -50,11 +51,11 @@ def staggered_model_online(test_temperatures, sample_temperatures, opt_C, opt_ep
         test_temperatures (np.ndarray): array of temperatures with shape (N,)
         sample_temperatures (np.ndarray): array of temperatures with shape (n,)
         opt_C (np.ndarray): optimal C at n temperatures with shape (n,6,6)
-        opt_eps (np.ndarray): optimal eps at n temperatures with shape (n,3)
+        opt_eps (np.ndarray): optimal eps at n temperatures with shape (n,6)
 
     Returns:
         np.ndarray: array of interpolated C with shape (N,6,6)
-        np.ndarray: array of interpolated eps with shape (N,3)
+        np.ndarray: array of interpolated eps with shape (N,6)
     """
     # Linear interpolation for C
     interp_C = interpolate.interp1d(sample_temperatures, opt_C, axis=0)
