@@ -27,7 +27,8 @@ try:
     with h5py.File(opt_file, 'r') as file:
         for idx, temperature in enumerate(sample_temperatures):
             opt_C[idx] = file[f'{data_path}_level{level}/eff_stiffness_{temperature:07.2f}'][:]
-            opt_eps[idx] = -file[f'{data_path}_level{level}/eff_thermal_strain_{temperature:07.2f}'][:]
+            # eg4_*.py saves (-1 * eff_thermal_strain) in the corresponding h5 file
+            opt_eps[idx] = -1.0 * file[f'{data_path}_level{level}/eff_thermal_strain_{temperature:07.2f}'][:]
 except Exception:
     print(f'Could not load precomputed data. Run eg4_*.py first for ms_id={ms_id}, level={level}.')
     exit()
