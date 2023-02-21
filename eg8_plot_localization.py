@@ -57,14 +57,13 @@ S1 = construct_stress_localization(E1, C1, eps1, mat_id, n_gauss, strain_dof)
 # %%
 
 
-def plot_localization(ax, E, i=0, idx=0):
-    """Plots the euclidean norm of the `i`-th row of
-    a localization operator `E` on the y-z-cross section at x=idx.
+def plot_localization(ax, E, idx=0):
+    """Plots the effective total strain/stress norm (not the deviatoric part)
+    of a given localization operator `E` on the y-z-cross section at x=idx.
 
     Args:
         ax: matplotlib axis
         E (np.ndarray): localization operator with shape (nx*ny*nz*ngauss, 6, 7)
-        i (int, optional): row no. of E to be plotted. Defaults to 0.
         idx (int, optional): y-z-cross section index. Defaults to 0.
     """
     assert E.ndim == nodal_dof
@@ -75,27 +74,27 @@ def plot_localization(ax, E, i=0, idx=0):
     E_ra = np.mean(E_r, axis=3)  # average over gauss points
     # compute the effective total strain norm (not the deviatoric part);
     # account for Mandel notation, i.e. activation strain with all components being 1.0
-    E_rai = np.einsum('ijklm,m',E_ra, np.asarray([1, 1, 1, np.sqrt(2), np.sqrt(2), np.sqrt(2),1]))
-    effective_strain = np.sqrt(2/3) * la.norm(E_rai,axis=-1)
-    # plot y-z-cross section at x=0
-    ax.imshow(effective_strain[idx, :, :], interpolation="spline16")
+    E_rai = np.einsum('ijklm,m', E_ra, np.asarray([1, 1, 1, np.sqrt(2), np.sqrt(2), np.sqrt(2), 1]))
+    effective_strain = np.sqrt(2/3) * la.norm(E_rai, axis=-1)
+    # plot y-z-cross section at x=idx
+    ax.imshow(effective_strain[idx, :, :], interpolation="gaussian")
 
 
 # Plot strain localization operator E at different temperatures
 fig, ax = plt.subplots(1, 3)
-plot_localization(ax[0], E0, i=0)
+plot_localization(ax[0], E0, idx=0)
 ax[0].set_title(
     r"$\underline{\underline{E}}\;\mathrm{at}\;\theta="
     + f"{temp0:.2f}"
     + r"\mathrm{K}$"
 )
-plot_localization(ax[1], Ea, i=0)
+plot_localization(ax[1], Ea, idx=0)
 ax[1].set_title(
     r"$\underline{\underline{E}}\;\mathrm{at}\;\theta="
     + f"{tempa:.2f}"
     + r"\mathrm{K}$"
 )
-plot_localization(ax[2], E1, i=0)
+plot_localization(ax[2], E1, idx=0)
 ax[2].set_title(
     r"$\underline{\underline{E}}\;\mathrm{at}\;\theta="
     + f"{temp1:.2f}"
@@ -106,19 +105,19 @@ plt.show()
 
 # Plot stress localization operator S at different temperatures
 fig, ax = plt.subplots(1, 3)
-plot_localization(ax[0], S0, i=0)
+plot_localization(ax[0], S0, idx=0)
 ax[0].set_title(
     r"$\underline{\underline{S}}\;\mathrm{at}\;\theta="
     + f"{temp0:.2f}"
     + r"\mathrm{K}$"
 )
-plot_localization(ax[1], Sa, i=0)
+plot_localization(ax[1], Sa, idx=0)
 ax[1].set_title(
     r"$\underline{\underline{S}}\;\mathrm{at}\;\theta="
     + f"{tempa:.2f}"
     + r"\mathrm{K}$"
 )
-plot_localization(ax[2], S1, i=0)
+plot_localization(ax[2], S1, idx=0)
 ax[2].set_title(
     r"$\underline{\underline{S}}\;\mathrm{at}\;\theta="
     + f"{temp1:.2f}"
@@ -126,3 +125,5 @@ ax[2].set_title(
 )
 plt.savefig("output/S.png", dpi=300)
 plt.show()
+
+# %%
