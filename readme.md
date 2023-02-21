@@ -72,13 +72,9 @@ For details about the setup of the following examples, please refer to the cited
 ["Reduced order homogenization of thermoelastic materials with strong temperature-dependence and comparison to a machine-learned model"](https://??????)
 
 by Shadi Sharba, Julius Herb and Felix Fritzen. Published in *Archive of Applied Mechanics*, DOI ??????. Pre-print available
-at https://arxiv.org/?????? .
+at [https://doi.org/10.21203/rs.3.rs-2126479/v1](https://doi.org/10.21203/rs.3.rs-2126479/v1).
 
-## Contact
-
-- [Shadi Sharba](mailto:shadi.sharba@mib.uni-stuttgart.de)
-- [Felix Fritzen](mailto:fritzen@mib.uni-stuttgart.de)
-- [Research group website](http://www.mib.uni-stuttgart.de/dae)
+Affiliation: [Data Analytics in Engineering, University of Stuttgart](http://www.mib.uni-stuttgart.de/dae)
 
 ## Acknowledgments
 
