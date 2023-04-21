@@ -69,10 +69,9 @@ For details about the setup of the following examples, please refer to the cited
 
 ## Manuscript
 
-["Reduced order homogenization of thermoelastic materials with strong temperature-dependence and comparison to a machine-learned model"](https://??????)
+["Reduced order homogenization of thermoelastic materials with strong temperature-dependence and comparison to a machine-learned model"](https://doi.org/10.1007/s00419-023-02411-6)
 
-by Shadi Sharba, Julius Herb and Felix Fritzen. Published in *Archive of Applied Mechanics*, DOI ??????. Pre-print available
-at [https://doi.org/10.21203/rs.3.rs-2126479/v1](https://doi.org/10.21203/rs.3.rs-2126479/v1).
+by Shadi Sharba, Julius Herb and Felix Fritzen. Published in *Archive of Applied Mechanics*, DOI: [10.1007/s00419-023-02411-6](https://doi.org/10.1007/s00419-023-02411-6).
 
 Affiliation: [Data Analytics in Engineering, University of Stuttgart](http://www.mib.uni-stuttgart.de/dae)
 
