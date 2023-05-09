@@ -468,53 +468,93 @@ def norm_2(a):
     return np.sqrt(inner_product(a, a))
 
 
-def mode_identification(strain_snapshots, r_min):
+def mode_identification(plastic_snapshots, r_min):
     """
     Identification of plastic strain modes µ using POD and renormalization
     :param strain_snapshots: plastic strain snapshots eps_p (ordered as described in `read_snapshots`)
         with shape (n_integration_points, strain_dof, n_frames)
     :param r_min: stop criterion
     :return:
-        strain_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, N_modes)
+        plastic_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, N_modes)
     """
-    n_integration_points, strain_dof, n_frames = strain_snapshots.shape
+    n_integration_points, strain_dof, n_frames = plastic_snapshots.shape
     N_modes = 0
-    strain_modes = np.zeros((n_integration_points, strain_dof, N_modes))
+    plastic_modes = np.zeros((n_integration_points, strain_dof, N_modes))
     for i in range(n_frames):
-        eps_i = strain_snapshots[:, :, i]
+        eps_i = plastic_snapshots[:, :, i]
         r = volume_average(inner_product(eps_i, eps_i))  # TODO: average only over Omega_p?
         k = np.zeros(N_modes)  # Coefficients k_j
         for j in range(N_modes):
-            k[j] = volume_average(inner_product(eps_i, strain_modes[:, :, j]))
+            k[j] = volume_average(inner_product(eps_i, plastic_modes[:, :, j]))
             r = r - k[j]**2
             if r > r_min:
                 break
         N_modes = N_modes + 1  # increment number of modes
         # Generate new strain mode:
-        strain_mode = (eps_i - np.tensordot(k, strain_modes, axes=(0,2))) / np.sqrt(r)
-        strain_modes = np.concatenate([strain_modes, np.expand_dims(strain_mode, 2)], axis=2)
+        plastic_mode = (eps_i - np.tensordot(k, plastic_modes, axes=(0,2))) / np.sqrt(r)
+        plastic_modes = np.concatenate([plastic_modes, np.expand_dims(plastic_mode, 2)], axis=2)
     # Renormalize all modes:
     for i in range(N_modes):
-        strain_modes[:, :, i] = strain_modes[:, :, i] / volume_average(norm_2(strain_modes[:, :, i]))
-    return strain_modes
+        plastic_modes[:, :, i] = plastic_modes[:, :, i] / volume_average(norm_2(plastic_modes[:, :, i]))
+    return plastic_modes
 
 
-def mode_processing(strain_modes):
+def mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes):
     """
-    Processing of the plastic strain modes µ to compute the matrices A, D^0, C and theta
+    Processing of the plastic strain modes µ to compute the matrices A_bar, D_xi, C_bar and the vector tau_theta
     as tabular data at given temperatures
-    :param strain_modes:
+    :param strain_localization: strain localization 3D array
+        with shape (n_integration_points, strain_dof, 7)
+    :param mat_stiffness: stiffness tensors of the phases
+        with shape (n_phases, strain_dof, strain_dof)
+    :param mat_id: material phase identification
+        with shape (n_elements,)
+    :param mesh:
+    :param plastic_modes: plastic strain modes µ
+        with shape (n_integration_points, strain_dof, N_modes)
+    :param eigen_strains: solutions of the auxiliary eigenstress problems eps_star
+        with shape (n_integration_points, strain_dof, N_modes)
     :param ...:
     :return:
-        A
-        D0
-        C
-        theta
+        A_bar with shape (strain_dof, strain_dof)
+        D_xi with shape (strain_dof, N_modes)
+        tau_theta with shape (strain_dof,)
+        C_bar with shape (strain_dof, strain_dof)
     """
-    pass
+    strain_dof = mesh['strain_dof']
+    n_gauss = mesh['n_gauss']
+    mat_id = mesh['mat_id']
+    mat_thermal_strain = None # TODO
+    N_modes = plastic_modes.shape[2]
+
+    # compute stress localization operator S (including plastic contributions)
+    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, \
+                                                        plastic_modes, mat_id, n_gauss, strain_dof)
+    
+    # slice stress localization operator S into S_eps, S_xi, S_theta
+    S_eps = stress_localization[:, :, :strain_dof]
+    S_xi = stress_localization[:, :, strain_dof:(strain_dof + N_modes)]
+    S_theta = stress_localization[:, :, -1]
+
+    # volume averaging S_eps -> C_bar, S_xi -> A_bar, S_theta -> tau_theta
+    C_bar = volume_average(S_eps)
+    A_bar = volume_average(S_xi)
+    tau_theta = volume_average(S_theta)
+
+    # Now we have A_bar, C_bar and tau_theta. Still missing: D_xi
+
+    # Compute D_xi
+    # plastic_modes has shape (n_integration_points, strain_dof, N_modes) -> transpose
+    # S_xi has shape (n_integration_points, strain_dof, N_modes)
+    # Then, D_xi has shape (N_modes, N_modes)
+    D_xi = -volume_average(plastic_modes.transpose((0, 2, 1)) @ S_xi)
+
+    # Should A_bar be transposed before saving data?
+
+    return A_bar, D_xi, tau_theta, C_bar
 
 
-def save_tabular_data(file_name, data_path, temperatures, A, D0, C, theta):
+def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, theta_theta, C_bar):
     """
     Save tabular data
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
