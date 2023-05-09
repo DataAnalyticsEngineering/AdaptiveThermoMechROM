@@ -21,6 +21,7 @@ plt.rcParams.update({
 
 cm = 1 / 2.54  # centimeters in inches
 
+
 def plot_and_save(xlabel, ylabel, fig_name, xlim=None, ylim=None, loc='best'):
     gca = plt.gca()
     gca.set_xlim(xlim)
@@ -33,11 +34,13 @@ def plot_and_save(xlabel, ylabel, fig_name, xlim=None, ylim=None, loc='best'):
     plt.savefig(f'output/{fig_name}.png')
     plt.show()
 
+
 def ecdf(x):
     """empirical cumulative distribution function"""
     # plt.step(*ecdf(np.asarray([1, 1, 2, 3, 4])), where='post')
     n = len(x)
     return [np.hstack((np.min(x), np.sort(np.squeeze(np.asarray(x))))), np.hstack((0, np.linspace(1 / n, 1, n)))]
+
 
 def voxel_quadrature(discretisation, strain_dof=6, nodal_dof=3):
     """
@@ -89,6 +92,7 @@ def voxel_quadrature(discretisation, strain_dof=6, nodal_dof=3):
         integration_weights[idx] = gp_weight
 
     return gradient_operators, integration_weights
+
 
 def read_h5(file_name, data_path, temperatures, get_mesh=True):
     """
@@ -204,6 +208,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
 
     return mesh, samples
 
+
 def verify_data(mesh, sample):
     """
     Sanity check to see if it is possible to reconstruct stress, strain fields and effective properties
@@ -268,6 +273,7 @@ def verify_data(mesh, sample):
                vol_frac0 * average_stress_0 + vol_frac1 * average_stress_1) < convergence_tolerance, \
         'phasewise volume average is not admissible'
 
+
 def compute_residual(stress, dof, n_elements, element_dof, n_gauss, assembly_idx, gradient_operators_times_w):
     """
     Compute FEM residual given a stress field
@@ -291,12 +297,14 @@ def compute_residual(stress, dof, n_elements, element_dof, n_gauss, assembly_idx
             residuals[assembly_idx[element_id], idx] += elmental_force
     return residuals
 
+
 def compute_residual_efficient(stress, global_gradient):
     stresses = stress
     if not isinstance(stress, list):
         stresses = [stress]
 
     return (np.vstack([x.flatten() for x in stresses]) @ global_gradient).T
+
 
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def compute_err_indicator(stress_loc, gradient_operators_times_w, dof, n_gauss, assembly_idx):
@@ -321,12 +329,15 @@ def compute_err_indicator(stress_loc, gradient_operators_times_w, dof, n_gauss, 
     # return la.norm(err_indicator)
     return err_indicator
 
+
 def compute_err_indicator_efficient(stress_loc, global_gradient):
     return global_gradient.T @ stress_loc.reshape(global_gradient.shape[0], -1)
+
 
 # @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def cheap_err_indicator(stress_loc, global_gradient):
     return la.norm(global_gradient.T @ np.sum(stress_loc, -1).flatten())
+
 
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mat_id, n_gauss,
@@ -347,6 +358,7 @@ def construct_stress_localization(strain_localization, mat_stiffness, mat_therma
         P = np.hstack((-I, mat_thermal_strain[phase_id], plastic_modes[gp_id]))
         stress_localization[gp_id] = mat_stiffness[phase_id] @ (strain_localization[gp_id] - P)
     return stress_localization
+
 
 def construct_stress_localization_phases(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, combo_strain_loc0,
                                          combo_strain_loc1, mesh):
@@ -386,6 +398,7 @@ def construct_stress_localization_phases(strain_localization, mat_stiffness, mat
             combo_stress_loc1[idx] = mat_stiffness[1] @ combo_strain_loc1[idx] - mat_stiffness[stiffness_idx] @ P
     return stress_localization0, stress_localization1, combo_stress_loc0, combo_stress_loc1
 
+
 def volume_average_phases(stress0, stress1, combo_stress0, combo_stress1, mesh):
     """
     Volume average of stress field in each phase
@@ -414,6 +427,96 @@ def volume_average_phases(stress0, stress1, combo_stress0, combo_stress1, mesh):
 
     return average_stress_0, average_stress_1
 
+
 def volume_average(field):
     """ Volume average of a given field in case of identical weights that sum to one """
     return np.mean(field, axis=0)
+
+
+def read_snapshots(file_name, data_path, temperatures):
+    """
+    Read an H5 file that contains responses of simulated microstructures
+    :param file_name: e.g. "input/simple_3d_rve_combo.h5"
+    :param data_path: the path to the simulation results within the h5 file, e.g. '/ms_1p/dset0_sim'
+    :param temperatures: all responses corresponding to these temperatures will be read 
+    :return:
+        strain_snapshots: plastic strain snapshots eps_p 
+            with shape (n_integration_points, strain_dof, n_frames)
+    """
+    # TODO: read snapshots from H5 file
+    # TODO: Reorder snapshots as follows: | 1st strain path: last timestep to first timestep | 2nd strain path: last timestep to first timestep | ...
+    pass
+
+
+def inner_product(a, b):
+    """
+    Compute inner product between tensor fields a and b
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    assert a.shape == b.shape
+    summation_axes = tuple(ax for ax in range(1, a.ndim))
+    return np.sum(a * b, axis=summation_axes)
+
+
+def norm_2(a):
+    """
+    Compute euclidean norm of tensor field a
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    return np.sqrt(inner_product(a, a))
+
+
+def mode_identification(strain_snapshots, r_min):
+    """
+    Identification of plastic strain modes µ using POD and renormalization
+    :param strain_snapshots: plastic strain snapshots eps_p (ordered as described in `read_snapshots`)
+        with shape (n_integration_points, strain_dof, n_frames)
+    :param r_min: stop criterion
+    :return:
+        strain_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, N_modes)
+    """
+    n_integration_points, strain_dof, n_frames = strain_snapshots.shape
+    N_modes = 0
+    strain_modes = np.zeros((n_integration_points, strain_dof, N_modes))
+    for i in range(n_frames):
+        eps_i = strain_snapshots[:, :, i]
+        r = volume_average(inner_product(eps_i, eps_i))  # TODO: average only over Omega_p?
+        k = np.zeros(N_modes)  # Coefficients k_j
+        for j in range(N_modes):
+            k[j] = volume_average(inner_product(eps_i, strain_modes[:, :, j]))
+            r = r - k[j]**2
+            if r > r_min:
+                break
+        N_modes = N_modes + 1  # increment number of modes
+        # Generate new strain mode:
+        strain_mode = (eps_i - np.tensordot(k, strain_modes, axes=(0,2))) / np.sqrt(r)
+        strain_modes = np.concatenate([strain_modes, np.expand_dims(strain_mode, 2)], axis=2)
+    # Renormalize all modes:
+    for i in range(N_modes):
+        strain_modes[:, :, i] = strain_modes[:, :, i] / volume_average(norm_2(strain_modes[:, :, i]))
+    return strain_modes
+
+
+def mode_processing(strain_modes):
+    """
+    Processing of the plastic strain modes µ to compute the matrices A, D^0, C and theta
+    as tabular data at given temperatures
+    :param strain_modes:
+    :param ...:
+    :return:
+        A
+        D0
+        C
+        theta
+    """
+    pass
+
+
+def save_tabular_data(file_name, data_path, temperatures, A, D0, C, theta):
+    """
+    Save tabular data
+    :param file_name: e.g. "input/simple_3d_rve_combo.h5"
+    """
+    pass
