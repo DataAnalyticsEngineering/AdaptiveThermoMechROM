@@ -45,10 +45,13 @@ print('plastic_modes.shape:', plastic_modes.shape)
 
 # TODO: compute system matrices for multiple temperatures in an efficient way
 sample = samples[0]  # For now, choose one arbitrary sample
+# plastic_modes = sample['plastic_modes'] (until we have real data)
+N_modes = plastic_modes.shape[2]
 strain_localization = sample["strain_localization"]
+# Add dummy data to strain_localization until we have real data:
+strain_localization = np.concatenate([strain_localization, np.random.rand(n_integration_points, strain_dof, N_modes)], axis=2)
 mat_stiffness = sample["mat_stiffness"]
 mat_thermal_strain = sample["mat_thermal_strain"]
-plastic_modes = sample['plastic_modes']
 A_bar, D_xi, tau_theta, C_bar = mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mesh)
 print('A_bar.shape:', A_bar.shape)
 print('D_xi.shape:', D_xi.shape)

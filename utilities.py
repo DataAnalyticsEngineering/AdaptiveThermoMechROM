@@ -339,7 +339,7 @@ def cheap_err_indicator(stress_loc, global_gradient):
     return la.norm(global_gradient.T @ np.sum(stress_loc, -1).flatten())
 
 
-@jit(nopython=True, cache=True, parallel=True, nogil=True)
+#@jit(nopython=True, cache=True, parallel=True, nogil=True)
 def construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mat_id, n_gauss,
                                   strain_dof):
     """
