@@ -1,5 +1,5 @@
 """
-Plot the strain localization operator E and stress localization operator S at different temperatures
+Demo code for plastic mode identification and processing, i.e. computation of the system matrices
 """
 #%%
 from operator import itemgetter
@@ -44,8 +44,10 @@ plastic_modes = mode_identification(plastic_snapshots, r_min)
 #%% Mode processing to compute system matrices (after snapshots have been computed using FANS)
 
 # TODO: compute system matrices for multiple temperatures in an efficient way
-strain_localization = samples[0]["strain_localization"]
-mat_stiffness = samples[0]["mat_stiffness"]
+sample = samples[0]  # For now, choose one arbitrary sample
+strain_localization = sample["strain_localization"]
+mat_stiffness = sample["mat_stiffness"]
+plastic_modes = sample['plastic_modes']
 A_bar, D_xi, tau_theta, C_bar = mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes)
 
 # TODO: save system matrices for multiple temperatures as tabular data

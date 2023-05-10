@@ -104,7 +104,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
         mesh: dictionary that contains microstructural details such as volume fraction, voxel type, ...
         samples: list of simulation results at each temperature
     """
-    axis_order = [0, 2, 1]  # n_gauss x strain_dof x 7 (7=6 mechanical + 1 thermal expansion)
+    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (N + 7) (N + 7 = 6 mechanical + N plastic + 1 thermal expansion)
 
     samples = []
     with h5py.File(file_name, 'r') as file:
@@ -429,8 +429,31 @@ def volume_average_phases(stress0, stress1, combo_stress0, combo_stress1, mesh):
 
 
 def volume_average(field):
-    """ Volume average of a given field in case of identical weights that sum to one """
+    """
+    Volume average of a given field in case of identical weights that sum to one
+    :param field: array with shape (n_integration_points, ...)
+    """
     return np.mean(field, axis=0)
+
+
+def inner_product(a, b):
+    """
+    Compute inner product between tensor fields a and b in case of identical weights that sum to one
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    assert a.shape == b.shape
+    summation_axes = tuple(ax for ax in range(1, a.ndim))
+    return np.sum(a * b, axis=summation_axes)
+
+
+def norm_2(a):
+    """
+    Compute euclidean norm of tensor field a in case of identical weights that sum to one
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    return np.sqrt(inner_product(a, a))
 
 
 def read_snapshots(file_name, data_path, temperatures):
@@ -443,29 +466,13 @@ def read_snapshots(file_name, data_path, temperatures):
         strain_snapshots: plastic strain snapshots eps_p 
             with shape (n_integration_points, strain_dof, n_frames)
     """
-    # TODO: read snapshots from H5 file
+    # TODO: read snapshots from H5 file. Because of the sheer amount of data it may be better to use a separate h5 file for the snapshots.
+    # For now, use dummy data:
+    n_integration_points, strain_dof, n_frames = 512, 6, 1000
+    plastic_snapshots = np.random.rand(n_integration_points, strain_dof, n_frames)
     # TODO: Reorder snapshots as follows: | 1st strain path: last timestep to first timestep | 2nd strain path: last timestep to first timestep | ...
+    # or: reorder snapshots already in FANS?
     pass
-
-
-def inner_product(a, b):
-    """
-    Compute inner product between tensor fields a and b
-    :param a: array with shape (n_integration_points, ...)
-    :param b: array with same shape as b
-    """
-    assert a.shape == b.shape
-    summation_axes = tuple(ax for ax in range(1, a.ndim))
-    return np.sum(a * b, axis=summation_axes)
-
-
-def norm_2(a):
-    """
-    Compute euclidean norm of tensor field a
-    :param a: array with shape (n_integration_points, ...)
-    :param b: array with same shape as b
-    """
-    return np.sqrt(inner_product(a, a))
 
 
 def mode_identification(plastic_snapshots, r_min):
