@@ -32,10 +32,12 @@ disc = mesh["combo_discretisation"]
 
 # TODO: Read plastic snapshots from h5 file
 plastic_snapshots = read_snapshots(file_name, data_path, temperatures)
+print('plastic_snapshots.shape:', plastic_snapshots.shape)
 
 # Mode identification using POD
-r_min = 1e-3
+r_min = 6e-5
 plastic_modes = mode_identification(plastic_snapshots, r_min)
+print('plastic_modes.shape:', plastic_modes.shape)
 
 # TODO: save identified plastic modes to h5 file
 
@@ -45,8 +47,13 @@ plastic_modes = mode_identification(plastic_snapshots, r_min)
 sample = samples[0]  # For now, choose one arbitrary sample
 strain_localization = sample["strain_localization"]
 mat_stiffness = sample["mat_stiffness"]
+mat_thermal_strain = sample["mat_thermal_strain"]
 plastic_modes = sample['plastic_modes']
-A_bar, D_xi, tau_theta, C_bar = mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes)
+A_bar, D_xi, tau_theta, C_bar = mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mesh)
+print('A_bar.shape:', A_bar.shape)
+print('D_xi.shape:', D_xi.shape)
+print('tau_theta.shape:', tau_theta.shape)
+print('C_bar.shape:', C_bar.shape)
 
 # TODO: save system matrices for multiple temperatures as tabular data
 save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar)

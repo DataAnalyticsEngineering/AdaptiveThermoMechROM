@@ -468,8 +468,10 @@ def read_snapshots(file_name, data_path, temperatures):
     """
     # TODO: read snapshots from H5 file. Because of the sheer amount of data it may be better to use a separate h5 file for the snapshots.
     # For now, use dummy data:
-    n_integration_points, strain_dof, n_frames = 512, 6, 1000
-    plastic_snapshots = np.random.rand(n_integration_points, strain_dof, n_frames)
+    n_integration_points, strain_dof, n_frames = 512, 6, 100
+    # plastic_snapshots = np.random.rand(n_integration_points, strain_dof, n_frames)
+    plastic_snapshots = np.random.rand(n_integration_points, strain_dof)[:, :, np.newaxis] * np.random.rand(n_frames) \
+        + 1e-2 * np.random.rand(n_integration_points, strain_dof, n_frames)
     # TODO: Reorder snapshots as follows: | 1st strain path: last timestep to first timestep | 2nd strain path: last timestep to first timestep | ...
     # or: reorder snapshots already in FANS?
     return plastic_snapshots
@@ -494,19 +496,20 @@ def mode_identification(plastic_snapshots, r_min):
         for j in range(N_modes):
             k[j] = volume_average(inner_product(eps_i, plastic_modes[:, :, j]))
             r = r - k[j]**2
-            if r > r_min:
+            if r < r_min:
                 break
-        N_modes = N_modes + 1  # increment number of modes
-        # Generate new strain mode:
-        plastic_mode = (eps_i - np.tensordot(k, plastic_modes, axes=(0,2))) / np.sqrt(r)
-        plastic_modes = np.concatenate([plastic_modes, np.expand_dims(plastic_mode, 2)], axis=2)
+        if r > r_min:
+            N_modes = N_modes + 1  # increment number of modes
+            # Generate new strain mode:
+            plastic_mode = (eps_i - np.tensordot(k, plastic_modes, axes=(0,2))) / np.sqrt(r)
+            plastic_modes = np.concatenate([plastic_modes, np.expand_dims(plastic_mode, 2)], axis=2)
     # Renormalize all modes:
     for i in range(N_modes):
         plastic_modes[:, :, i] = plastic_modes[:, :, i] / volume_average(norm_2(plastic_modes[:, :, i]))
     return plastic_modes
 
 
-def mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes):
+def mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mesh):
     """
     Processing of the plastic strain modes µ to compute the matrices A_bar, D_xi, C_bar and the vector tau_theta
     as tabular data at given temperatures
@@ -531,7 +534,6 @@ def mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes):
     strain_dof = mesh['strain_dof']
     n_gauss = mesh['n_gauss']
     mat_id = mesh['mat_id']
-    mat_thermal_strain = None # TODO
     N_modes = plastic_modes.shape[2]
 
     # compute stress localization operator S (including plastic contributions)
