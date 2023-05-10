@@ -472,7 +472,7 @@ def read_snapshots(file_name, data_path, temperatures):
     plastic_snapshots = np.random.rand(n_integration_points, strain_dof, n_frames)
     # TODO: Reorder snapshots as follows: | 1st strain path: last timestep to first timestep | 2nd strain path: last timestep to first timestep | ...
     # or: reorder snapshots already in FANS?
-    pass
+    return plastic_snapshots
 
 
 def mode_identification(plastic_snapshots, r_min):
@@ -548,8 +548,6 @@ def mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes):
     A_bar = volume_average(S_xi)
     tau_theta = volume_average(S_theta)
 
-    # Now we have A_bar, C_bar and tau_theta. Still missing: D_xi
-
     # Compute D_xi
     # plastic_modes has shape (n_integration_points, strain_dof, N_modes) -> transpose
     # S_xi has shape (n_integration_points, strain_dof, N_modes)
@@ -561,9 +559,10 @@ def mode_processing(strain_localization, mat_stiffness, mesh, plastic_modes):
     return A_bar, D_xi, tau_theta, C_bar
 
 
-def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, theta_theta, C_bar):
+def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar):
     """
     Save tabular data
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
+    :param ...:
     """
     pass
