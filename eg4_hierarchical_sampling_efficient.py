@@ -12,7 +12,7 @@ from utilities import read_h5, construct_stress_localization, compute_err_indica
 np.random.seed(0)
 # np.set_printoptions(precision=3)
 
-for ms_id in [6, 7, 8, 9]:
+for ms_id in [7, 8, 9]:
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2',
                                                                               'n_tests',
                                                                               'sampling_alphas')(microstructures[ms_id])
@@ -36,17 +36,18 @@ for ms_id in [6, 7, 8, 9]:
     global_gradient = mesh['global_gradient']
     n_gp = mesh['n_integration_points']
     n_phases = len(np.unique(mat_id))
-    n_modes = refs[0]['strain_localization'].shape[-1]
+    N_modes = refs[0]['strain_localization'].shape[2] - 7
 
     # extract temperature dependent data from the reference solutions
     # such as: material stiffness and thermal strain at each temperature and for all phases
     Erefs = np.zeros((n_tests, *refs[0]['strain_localization'].shape))  # n_tests x n_phases x 6 x 6
     ref_Cs = np.zeros((n_tests, *refs[0]['mat_stiffness'].shape))  # n_tests x n_phases x 6 x 6
     ref_epss = np.zeros((n_tests, *refs[0]['mat_thermal_strain'].shape))  # n_tests x n_phases x 6 x 1
-    effSref = np.zeros((n_tests, strain_dof, n_modes))
+    effSref = np.zeros((n_tests, strain_dof, N_modes + 7))  # n_tests x 6 x (N + 7)
     normalization_factor_mech = np.zeros((n_tests))
     plastic_modes = refs[0]['plastic_modes']  # temperature independent
     for idx, alpha in enumerate(test_alphas):
+        print(idx)
         Erefs[idx] = refs[idx]['strain_localization']
         ref_Cs[idx] = refs[idx]['mat_stiffness']
         ref_epss[idx] = refs[idx]['mat_thermal_strain']
@@ -109,7 +110,7 @@ for ms_id in [6, 7, 8, 9]:
                 current_sampling_id = alphas_indexing[idx]
 
                 K0, K1, F0, F1, F2, F3, S001, S101, S103, S002, S102, S104 = update_affine_decomposition(
-                    E01s[current_sampling_id], sampling_C, sampling_eps, plastic_modes, n_modes, n_phases,
+                    E01s[current_sampling_id], sampling_C, sampling_eps, plastic_modes, N_modes, n_phases,
                     n_gp, strain_dof,
                     mat_id, n_gauss)
 
@@ -121,15 +122,15 @@ for ms_id in [6, 7, 8, 9]:
                 # C, eps = opt4(sampling_C, sampling_eps, ref_Cs[idx], ref_epss[idx])
                 _, effSopt = interpolate_fluctuation_modes(E01s[current_sampling_id], C, eps, plastic_modes, mat_id, n_gauss,
                                                            strain_dof,
-                                                           n_modes, n_gp)
+                                                           N_modes, n_gp)
             elif speed == 1:
                 # TODO verify the result when plasticity is on
                 effSopt = effective_stress_localization(E01s[current_sampling_id], phi, ref_Cs[idx], ref_epss[idx], plastic_modes,
                                                         mat_id,
-                                                        n_gauss, n_gp, strain_dof, n_modes)
+                                                        n_gauss, n_gp, strain_dof, N_modes)
             elif speed == 2:
                 # TODO verify the result when plasticity is on
-                # matches the result from interpolate_fluctuation_modes with a difference
+                # matches the result from interpolate_fluctuatioN_modes with a difference
                 # that depends on using ref_Cs[idx],ref_epss[idx] instead of alphas
                 effSopt, phi = effective_S(phi, S001, S101, S103, S002, S102, S104, alpha_C, np.squeeze(alpha_eps, axis=-1),
                                            np.squeeze(alpha_C_eps, axis=-1))
@@ -137,7 +138,7 @@ for ms_id in [6, 7, 8, 9]:
                 raise NotImplementedError()
 
             if not given_alpha_levels:
-                Eopt4 = transform_strain_localization(E01s[current_sampling_id], phi, n_gp, strain_dof, n_modes)
+                Eopt4 = transform_strain_localization(E01s[current_sampling_id], phi, n_gp, strain_dof, N_modes)
                 Sopt4 = construct_stress_localization(Eopt4, ref_Cs[idx], ref_epss[idx], plastic_modes, mat_id, n_gauss,
                                                       strain_dof)
                 # effSopt = volume_average(Sopt4)

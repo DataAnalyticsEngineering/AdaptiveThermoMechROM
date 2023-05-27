@@ -17,6 +17,13 @@ for microstructure in microstructures:
 
     mesh, samples = read_h5(file_name, data_path, temperatures)
 
+    print(mesh.keys())
+    print(samples[0].keys())
+    print(samples[0]['strain_localization'].shape)
+    print(samples[0]['mat_stiffness'].shape)
+    print(samples[0]['plastic_modes'].shape)
+    #print(mesh)
+    #break
     for sample in samples:
         verify_data(mesh, sample)
 

@@ -58,5 +58,7 @@ print('D_xi.shape:', D_xi.shape)
 print('tau_theta.shape:', tau_theta.shape)
 print('C_bar.shape:', C_bar.shape)
 
+# TODO: compute system matrices for multiple intermediate temperatures in an efficient way
+
 # TODO: save system matrices for multiple temperatures as tabular data
 save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar)
