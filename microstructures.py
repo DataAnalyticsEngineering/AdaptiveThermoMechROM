@@ -120,4 +120,11 @@ microstructures = [{
             np.asarray([0., 0.72727273, 0.8989899, 0.96969697, 1.]),
             np.asarray([0., 0.52525253, 0.72727273, 0.8989899, 0.96969697, 1.])
         ], dtype=object)
+}, {
+    'data_path': '/ms_1p/dset0_sim',
+    'file_name': path("input/striped_normal_4x4x4_plastic.h5"),
+    'temp1': 300,
+    'temp2': 1300,
+    'n_tests': 10,
+    'sampling_alphas': None
 }]

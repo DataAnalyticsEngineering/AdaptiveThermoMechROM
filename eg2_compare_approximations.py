@@ -12,7 +12,7 @@ from utilities import read_h5, construct_stress_localization, volume_average, co
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[0])
+                                                                          'sampling_alphas')(microstructures[-1])
 print(file_name, '\t', data_path)
 
 n_loading_directions = 10

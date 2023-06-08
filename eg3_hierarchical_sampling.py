@@ -13,11 +13,11 @@ from utilities import read_h5, construct_stress_localization, volume_average, co
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[6])
+                                                                          'sampling_alphas')(microstructures[-1])
 print(file_name, '\t', data_path)
 
 n_loading_directions = 1
-n_hierarchical_levels = 5
+n_hierarchical_levels = 2
 test_temperatures = np.linspace(temp1, temp2, num=n_tests)
 test_alphas = np.linspace(0, 1, num=n_tests)
 
