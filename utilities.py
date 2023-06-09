@@ -11,6 +11,7 @@ from operator import itemgetter
 from optimize_alpha import opt4
 from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
+from material_parameters import *
 
 plt.rcParams.update({
     'font.size': 8,
@@ -108,7 +109,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True, dummy_plastic_dat
         mesh: dictionary that contains microstructural details such as volume fraction, voxel type, ...
         samples: list of simulation results at each temperature
     """
-    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (N_modes + 7) (N_modes + 7 = 6 mechanical + N_modes plastic + 1 thermal expansion)
+    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (n_modes + 7) (n_modes + 7 = 6 mechanical + n_modes plastic + 1 thermal expansion)
 
     samples = []
     with h5py.File(file_name, 'r') as file:
@@ -153,12 +154,12 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True, dummy_plastic_dat
                 if 'plastic_modes' in file[f'{data_path}'].keys():
                     sample['plastic_modes'] = file[f'{data_path}/plastic_modes'][:].transpose(axis_order)
                 else:
-                    # sample['plastic_modes'] = np.zeros((*sample['strain_localization'].shape[:2], 0))
-                    sample['plastic_modes'] = create_dummy_plastic_modes(*sample['strain_localization'].shape[:2], N_modes=13)
-                    sample['strain_localization'] = create_dummy_plastic_strain_localization(sample['strain_localization'], N_modes=13)
-                    if mesh['vox_type'] == 'combo':
-                        sample['combo_strain_loc0'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc0'], N_modes=13)
-                        sample['combo_strain_loc1'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc1'], N_modes=13)
+                    sample['plastic_modes'] = np.zeros((*sample['strain_localization'].shape[:2], 0))
+                    # sample['plastic_modes'] = create_dummy_plastic_modes(*sample['strain_localization'].shape[:2], N_modes=13)
+                    # sample['strain_localization'] = create_dummy_plastic_strain_localization(sample['strain_localization'], N_modes=13)
+                    # if mesh['vox_type'] == 'combo':
+                    #     sample['combo_strain_loc0'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc0'], N_modes=13)
+                    #     sample['combo_strain_loc1'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc1'], N_modes=13)
 
         if get_mesh:
             mesh['volume_fraction'] = file[f'{data_path}'].attrs['combo_volume_fraction']
@@ -254,17 +255,15 @@ def verify_data(mesh, sample):
     # - C @ eff_plastic_strain # eff_plastic_strain is not stored because it depends on the macroscopic strain
     err = lambda x, y: np.mean(la.norm(x - y) / la.norm(y))
 
-    # TODO: reenable assert when using real data
-    #assert err(eff_thermoelastic_stiffness,
-    #           np.vstack((eff_stiffness, -eff_stiffness @ eff_thermal_strain)).T) < convergence_tolerance, \
-    #    'incompatibility between stress_localization and effective quantities'
+    assert err(eff_thermoelastic_stiffness,
+               np.vstack((eff_stiffness, -eff_stiffness @ eff_thermal_strain)).T) < convergence_tolerance, \
+        'incompatibility between stress_localization and effective quantities'
 
     with np.printoptions(precision=4, suppress=True, formatter={'float': '{:>2.2e}'.format}, linewidth=100):
         print('\n', abs_err)
 
-    # TODO: reenable assert when using real data
-    #assert la.norm(residual, np.inf) / sample['normalization_factor_mech'] < 10 * convergence_tolerance, \
-    #    'stress field is not statically admissible'
+    assert la.norm(residual, np.inf) / sample['normalization_factor_mech'] < 10 * convergence_tolerance, \
+        'stress field is not statically admissible'
 
     stress_localization0, stress_localization1, combo_stress_loc0, combo_stress_loc1 = construct_stress_localization_phases(
         strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, combo_strain_loc0, combo_strain_loc1, mesh)
@@ -346,12 +345,12 @@ def compute_err_indicator_efficient(stress_loc, global_gradient):
     return global_gradient.T @ stress_loc.reshape(global_gradient.shape[0], -1)
 
 
-# @jit(nopython=True, cache=True, parallel=True, nogil=True)
+@jit(nopython=True, cache=True, parallel=True, nogil=True)
 def cheap_err_indicator(stress_loc, global_gradient):
     return la.norm(global_gradient.T @ np.sum(stress_loc, -1).flatten())
 
 
-#@jit(nopython=True, cache=True, parallel=True, nogil=True)
+@jit(nopython=True, cache=True, parallel=True, nogil=True)
 def construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mat_id, n_gauss,
                                   strain_dof):
     """
@@ -496,20 +495,22 @@ def create_dummy_plastic_strain_localization(strain_localization, N_modes):
     return strain_localization
 
 
-def read_snapshots(file_name, data_path, temperatures):
+def read_snapshots(file_name, data_path):
     """
     Read an H5 file that contains responses of simulated microstructures
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
     :param data_path: the path to the simulation results within the h5 file, e.g. '/ms_1p/dset0_sim'
-    :param temperatures: all responses corresponding to these temperatures will be read 
     :return:
         strain_snapshots: plastic strain snapshots eps_p 
             with shape (n_integration_points, strain_dof, n_frames)
     """
     # TODO: read snapshots from H5 file. Because of the sheer amount of data it may be better to use a separate h5 file for the snapshots.
+    plastic_snapshots = None
+    with h5py.File(file_name, 'r') as file:
+        plastic_snapshots = np.transpose(file[f'{data_path}/plastic_strains'][:], (0, 2, 1))
     # For now, use dummy data:
-    n_integration_points, strain_dof, n_frames = 512, 6, 100
-    plastic_snapshots = create_dummy_plastic_modes(n_integration_points, strain_dof, n_frames)
+    # n_integration_points, strain_dof, n_frames = 512, 6, 100
+    # plastic_snapshots = create_dummy_plastic_modes(n_integration_points, strain_dof, n_frames)
     # TODO: Reorder snapshots as follows: | 1st strain path: last timestep to first timestep | 2nd strain path: last timestep to first timestep | ...
     # or: reorder snapshots already in FANS?
     return plastic_snapshots
@@ -522,32 +523,50 @@ def mode_identification(plastic_snapshots, r_min):
         with shape (n_integration_points, strain_dof, n_frames)
     :param r_min: stop criterion
     :return:
-        plastic_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, N_modes)
+        plastic_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, n_modes)
     """
     n_integration_points, strain_dof, n_frames = plastic_snapshots.shape
-    N_modes = 0
-    plastic_modes = np.zeros((n_integration_points, strain_dof, N_modes))
+    n_modes = 0
+    plastic_modes = np.zeros((n_integration_points, strain_dof, n_modes))
     for i in range(n_frames):
         eps_i = plastic_snapshots[:, :, i]
         r = volume_average(inner_product(eps_i, eps_i))  # TODO: average only over Omega_p?
-        k = np.zeros(N_modes)  # Coefficients k_j
-        for j in range(N_modes):
+        k = np.zeros(n_modes)  # Coefficients k_j
+        for j in range(n_modes):
             k[j] = volume_average(inner_product(eps_i, plastic_modes[:, :, j]))
             r = r - k[j]**2
             if r < r_min:
                 break
         if r > r_min:
-            N_modes = N_modes + 1  # increment number of modes
+            n_modes = n_modes + 1  # increment number of modes
             # Generate new strain mode:
             plastic_mode = (eps_i - np.tensordot(k, plastic_modes, axes=(0,2))) / np.sqrt(r)
             plastic_modes = np.concatenate([plastic_modes, np.expand_dims(plastic_mode, 2)], axis=2)
     # Renormalize all modes:
-    for i in range(N_modes):
-        plastic_modes[:, :, i] = plastic_modes[:, :, i] / volume_average(norm_2(plastic_modes[:, :, i]))
+    for i in range(n_modes):
+        plastic_modes[:, :, i] = plastic_modes[:, :, i] / volume_average(norm_2(plastic_modes[:, :, i]))  # TODO: average only over specific phase!
     return plastic_modes
 
 
-def mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mesh):
+def mode_identification_svd(plastic_snapshots, r_min=1e-8):
+    """
+    Identification of plastic strain modes µ using POD and renormalization
+    :param strain_snapshots: plastic strain snapshots eps_p (ordered as described in `read_snapshots`)
+        with shape (n_integration_points, strain_dof, n_frames)
+    :param r_min: stop criterion
+    :return:
+        plastic_modes: plastic strain modes µ with shape (n_integration_points, strain_dof, n_modes)
+    """
+    n_integration_points, strain_dof, n_frames = plastic_snapshots.shape
+    plastic_snapshots_rs = plastic_snapshots.transpose(1, 0, 2).reshape((strain_dof * n_integration_points, n_frames))
+    u, s, v = np.linalg.svd(plastic_snapshots_rs, full_matrices=False)
+    s = s / s[0]
+    n_modes = np.argwhere(s > r_min).size
+    plastic_modes = u[:, :n_modes].reshape((strain_dof, n_integration_points, n_modes)).transpose(1, 0, 2)
+    return plastic_modes
+
+
+def compute_ntfa_matrices(stress_localization, plastic_modes, thermal_strain, mesh):
     """
     Processing of the plastic strain modes µ to compute the matrices A_bar, D_xi, C_bar and the vector tau_theta
     as tabular data at given temperatures
@@ -570,17 +589,12 @@ def mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plas
         C_bar with shape (strain_dof, strain_dof)
     """
     strain_dof = mesh['strain_dof']
-    n_gauss = mesh['n_gauss']
     mat_id = mesh['mat_id']
-    N_modes = plastic_modes.shape[2]
-
-    # compute stress localization operator S (including plastic contributions)
-    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, \
-                                                        plastic_modes, mat_id, n_gauss, strain_dof)
+    n_modes = plastic_modes.shape[2]
     
     # slice stress localization operator S into S_eps, S_xi, S_theta
     S_eps = stress_localization[:, :, :strain_dof]
-    S_xi = stress_localization[:, :, strain_dof:(strain_dof + N_modes)]
+    S_xi = stress_localization[:, :, strain_dof:(strain_dof + n_modes)]
     S_theta = stress_localization[:, :, -1]
 
     # volume averaging S_eps -> C_bar, S_xi -> A_bar, S_theta -> tau_theta
@@ -588,31 +602,37 @@ def mode_processing(strain_localization, mat_stiffness, mat_thermal_strain, plas
     A_bar = volume_average(S_xi)
     tau_theta = volume_average(S_theta)
 
-    # Compute D_xi
-    # plastic_modes has shape (n_integration_points, strain_dof, N_modes) -> transpose
-    # S_xi has shape (n_integration_points, strain_dof, N_modes)
-    # Then, D_xi has shape (N_modes, N_modes)
-    D_xi = -volume_average(plastic_modes.transpose((0, 2, 1)) @ S_xi)
+    # Compute D_xi, D_theta, tau_hat by volume averaging after matrix multiplication
+    # plastic_modes has shape (n_integration_points, strain_dof, n_modes) -> transpose
+    # plastic_modes_T has shape (n_integration_points, n_modes, strain_dof)
+    # thermal_strain has shape (n_integration_points, strain_dof, n_modes) -> transpose
+    # S_xi has shape (n_integration_points, strain_dof, n_modes) -> D_xi has shape (n_modes, n_modes)
+    # S_theta has shape (n_integration_points, strain_dof, 1) -> D_theta has shape (N_modes, N_modes)
+    plastic_modes_T = plastic_modes.transpose((0, 2, 1))
+    thermal_strain_T = thermal_strain.reshape((1, -1))
+    D_xi = -volume_average(plastic_modes_T @ S_xi)
+    # D_theta = -volume_average(thermal_strain_T @ S_theta)
+    # tau_hat = -volume_average(plastic_modes_T @ S_theta)
 
     # Should A_bar be transposed before saving data?
 
     return A_bar, D_xi, tau_theta, C_bar
 
 
-def compute_tabular_data_for_ms(ms_id):
+def compute_tabular_data_for_ms(ms_id, temperatures):
     """
     Perform `compute_tabular_data` for microstructure with id `ms_id`
     """
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[7])
-    test_temperatures = np.linspace(temp1, temp2, num=n_tests)
-    test_alphas = np.linspace(0, 1, num=n_tests)
+                                                                          'sampling_alphas')(microstructures[ms_id])
+    sample_temperatures = np.linspace(temp1, temp2, num=n_tests)
+    sample_alphas = np.linspace(0, 1, num=n_tests)
+    mesh, samples = read_h5(file_name, data_path, sample_temperatures)
+    return compute_tabular_data(samples, mesh, temperatures)
 
-    mesh, ref = read_h5(file_name, data_path, test_temperatures)  # TODO: remove?
-    _, samples = read_h5(file_name, data_path, temperatures)
 
-
-def compute_tabular_data(samples, mesh, temp1, temp2, dns_alphas, temperatures):
+#@jit(nopython=True, cache=True, parallel=True, nogil=True)
+def compute_tabular_data(samples, mesh, temperatures):
     """
     """
     mat_id = mesh['mat_id']
@@ -621,13 +641,21 @@ def compute_tabular_data(samples, mesh, temp1, temp2, dns_alphas, temperatures):
     global_gradient = mesh['global_gradient']
     n_gp = mesh['n_integration_points']
     n_phases = len(np.unique(mat_id))
-    n_modes = samples[0]['strain_localization'].shape[-1]
-    interpolate_temp = lambda x1, x2, alpha: x1 + alpha * (x2 - x1)
-    dns_temperatures = interpolate_temp(temp1, temp2, dns_alphas)
-    for idx in enumerate(dns_alphas):
-        temperature = temperatures[idx]  # TODO: does not work?
-
-        upper_bound = np.searchsorted(dns_alphas, alpha)
+    n_modes = samples[0]['plastic_modes'].shape[-1]
+    n_temps = len(temperatures)
+    A_bar = np.zeros((strain_dof, n_modes, n_temps))
+    D_xi = np.zeros((n_modes, n_modes, n_temps))
+    tau_theta = np.zeros((strain_dof, n_temps))
+    C_bar = np.zeros((strain_dof, strain_dof, n_temps))
+    # interpolate_temp = lambda x1, x2, alpha: x1 + alpha * (x2 - x1)
+    # dns_temperatures = interpolate_temp(temp1, temp2, sample_alphas)
+    sample_temperatures = np.array([sample['temperature'] for sample in samples])
+    temp1, temp2 = min(sample_temperatures), max(sample_temperatures)
+    sample_alphas = (sample_temperatures - temp1) / (temp2 - temp1)
+    for idx in prange(n_temps):
+        temperature = temperatures[idx]
+        alpha = (temperature - temp1) / (temp2 - temp1)
+        upper_bound = np.searchsorted(sample_alphas, alpha)
         id1 = upper_bound if upper_bound > 0 else 1
         id0 = id1 - 1
 
@@ -637,15 +665,69 @@ def compute_tabular_data(samples, mesh, temp1, temp2, dns_alphas, temperatures):
 
         sampling_C = np.stack((samples[id0]['mat_stiffness'], samples[id1]['mat_stiffness'])).transpose([1, 0, 2, 3])
         sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
-        plastic_modes = samples[idx]['plastic_modes']  # TODO: does exist?
-        normalization_factor_mech = samples[idx]['normalization_factor_mech']  # TODO: does exist?
+        plastic_modes = samples[id0]['plastic_modes']  # TODO: does exist?
+        # normalization_factor_mech = samples[idx]['normalization_factor_mech']  # TODO: does exist?
+        ref_C = np.stack(([stiffness_cu(temperature), stiffness_wsc(temperature)]))
+        ref_eps = np.expand_dims(np.stack(([thermal_strain_cu(temperature), thermal_strain_wsc(temperature)])), axis=2)
 
         # interpolated quantities using an implicit interpolation scheme with four DOF
         approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
         Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
                                                  n_gp)
         Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
-        effSopt = volume_average(Sopt4)
+        # effSopt = volume_average(Sopt4)
+        A_bar[:,:,idx], D_xi[:,:,idx], tau_theta[:,idx], C_bar[:,:,idx] = compute_ntfa_matrices(Sopt4, plastic_modes, approx_eps, mesh)
+    return A_bar, D_xi, tau_theta, C_bar
+
+
+@jit(nopython=True, cache=True, parallel=True, nogil=True)
+def compute_tabular_data_efficient(samples, mesh, temperatures):
+    """
+    """
+    mat_id = mesh['mat_id']
+    n_gauss = mesh['n_gauss']
+    strain_dof = mesh['strain_dof']
+    global_gradient = mesh['global_gradient']
+    n_gp = mesh['n_integration_points']
+    n_phases = len(np.unique(mat_id))
+    n_modes = samples[0]['strain_localization'].shape[-1]
+    n_temps = len(temperatures)
+    A_bar = np.zeros((strain_dof, n_modes - 7, n_temps))
+    D_xi = np.zeros((n_modes - 7, n_modes - 7, n_temps))
+    tau_theta = np.zeros((strain_dof, n_temps))
+    C_bar = np.zeros((strain_dof, strain_dof, n_temps))
+    # interpolate_temp = lambda x1, x2, alpha: x1 + alpha * (x2 - x1)
+    # dns_temperatures = interpolate_temp(temp1, temp2, sample_alphas)
+    sample_temperatures = np.array([sample['temperature'] for sample in samples])
+    temp1, temp2 = min(sample_temperatures), max(sample_temperatures)
+    sample_alphas = (sample_temperatures - temp1) / (temp2 - temp1)
+    # for idx, temperature in enumerate(temperatures):
+    for idx in prange(n_temps):
+        temperature = temperatures[idx]
+        alpha = (temperature - temp1) / (temp2 - temp1)
+        upper_bound = np.searchsorted(sample_alphas, alpha)
+        id1 = upper_bound if upper_bound > 0 else 1
+        id0 = id1 - 1
+
+        E0 = samples[id0]['strain_localization']
+        E1 = samples[id1]['strain_localization']
+        E01 = np.ascontiguousarray(np.concatenate((E0, E1), axis=-1))
+
+        sampling_C = np.stack((samples[id0]['mat_stiffness'], samples[id1]['mat_stiffness'])).transpose([1, 0, 2, 3])
+        sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
+        plastic_modes = samples[id0]['plastic_modes']  # TODO: does exist?
+        # normalization_factor_mech = samples[idx]['normalization_factor_mech']  # TODO: does exist?
+        ref_C = np.stack(([stiffness_cu(temperature), stiffness_wsc(temperature)]))
+        ref_eps = np.expand_dims(np.stack(([thermal_strain_cu(temperature), thermal_strain_wsc(temperature)])), axis=2)
+
+        # interpolated quantities using an implicit interpolation scheme with four DOF
+        approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
+        Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                                 n_gp)
+        Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
+        # effSopt = volume_average(Sopt4)
+        A_bar[:,:,idx], D_xi[:,:,idx], tau_theta[:,idx], C_bar[:,:,idx] = compute_ntfa_matrices(Sopt4, plastic_modes, mesh)
+    return A_bar, D_xi, tau_theta, C_bar
 
 
 def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar):

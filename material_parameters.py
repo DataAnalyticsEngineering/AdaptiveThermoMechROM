@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
 
-from utilities import cm
+cm = 1 / 2.54  # centimeters in inches
 
 I2 = np.asarray([1., 1., 1., 0, 0, 0])
 I4 = np.eye(6)

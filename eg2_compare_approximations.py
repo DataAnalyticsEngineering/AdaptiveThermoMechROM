@@ -7,8 +7,11 @@ import numpy.linalg as la
 
 from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
+from material_parameters import *
 from optimize_alpha import opt1, opt2, opt4, naive
 from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient
+from matplotlib import rc
+rc('text', usetex=False) 
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
@@ -54,6 +57,9 @@ for idx, alpha in enumerate(test_alphas):
     Eref = ref[idx]['strain_localization']
     ref_C = ref[idx]['mat_stiffness']
     ref_eps = ref[idx]['mat_thermal_strain']
+    ref_C_ = np.stack(([stiffness_cu(temperature), stiffness_wsc(temperature)]))
+    ref_eps_ = np.expand_dims(np.stack(([thermal_strain_cu(temperature), thermal_strain_wsc(temperature)])), axis=2)
+    print(np.linalg.norm(ref_C - ref_C_), np.linalg.norm(ref_eps - ref_eps_))
     plastic_modes = ref[idx]['plastic_modes']
     normalization_factor_mech = ref[idx]['normalization_factor_mech']
 

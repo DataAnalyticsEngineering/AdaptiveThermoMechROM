@@ -12,7 +12,7 @@ from utilities import read_h5, construct_stress_localization, compute_err_indica
 np.random.seed(0)
 # np.set_printoptions(precision=3)
 
-for ms_id in [7, 8, 9]:
+for ms_id in [0]:
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2',
                                                                               'n_tests',
                                                                               'sampling_alphas')(microstructures[ms_id])
@@ -117,25 +117,26 @@ for ms_id in [7, 8, 9]:
             phi = get_phi(K0, K1, F0, F1, F2, F3, alpha_C, alpha_eps, alpha_C_eps)
 
             speed = 1
-            if speed == 0:
-                C, eps = ref_Cs[idx], ref_epss[idx]
-                # C, eps = opt4(sampling_C, sampling_eps, ref_Cs[idx], ref_epss[idx])
-                _, effSopt = interpolate_fluctuation_modes(E01s[current_sampling_id], C, eps, plastic_modes, mat_id, n_gauss,
-                                                           strain_dof,
-                                                           N_modes, n_gp)
-            elif speed == 1:
-                # TODO verify the result when plasticity is on
-                effSopt = effective_stress_localization(E01s[current_sampling_id], phi, ref_Cs[idx], ref_epss[idx], plastic_modes,
-                                                        mat_id,
-                                                        n_gauss, n_gp, strain_dof, N_modes)
-            elif speed == 2:
-                # TODO verify the result when plasticity is on
-                # matches the result from interpolate_fluctuatioN_modes with a difference
-                # that depends on using ref_Cs[idx],ref_epss[idx] instead of alphas
-                effSopt, phi = effective_S(phi, S001, S101, S103, S002, S102, S104, alpha_C, np.squeeze(alpha_eps, axis=-1),
-                                           np.squeeze(alpha_C_eps, axis=-1))
-            else:
-                raise NotImplementedError()
+            # if speed == 0:
+            C, eps = ref_Cs[idx], ref_epss[idx]
+            # C, eps = opt4(sampling_C, sampling_eps, ref_Cs[idx], ref_epss[idx])
+            _, effSopt = interpolate_fluctuation_modes(E01s[current_sampling_id], C, eps, plastic_modes, mat_id, n_gauss,
+                                                        strain_dof,
+                                                        N_modes, n_gp)
+            #elif speed == 1:
+            # TODO verify the result when plasticity is on
+            effSopt1 = effective_stress_localization(E01s[current_sampling_id], phi, ref_Cs[idx], ref_epss[idx], plastic_modes,
+                                                    mat_id,
+                                                    n_gauss, n_gp, strain_dof, N_modes)
+            #elif speed == 2:
+            # TODO verify the result when plasticity is on
+            # matches the result from interpolate_fluctuatioN_modes with a difference
+            # that depends on using ref_Cs[idx],ref_epss[idx] instead of alphas
+            effSopt2, phi2 = effective_S(phi, S001, S101, S103, S002, S102, S104, alpha_C, np.squeeze(alpha_eps, axis=-1),
+                                        np.squeeze(alpha_C_eps, axis=-1))
+            #else:
+            #    raise NotImplementedError()
+            print(np.linalg.norm(effSopt - effSopt1))
 
             if not given_alpha_levels:
                 Eopt4 = transform_strain_localization(E01s[current_sampling_id], phi, n_gp, strain_dof, N_modes)

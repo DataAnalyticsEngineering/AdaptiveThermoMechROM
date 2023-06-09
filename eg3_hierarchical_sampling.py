@@ -10,6 +10,8 @@ from microstructures import *
 from optimize_alpha import opt4
 from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient, \
     compute_err_indicator_efficient
+from matplotlib import rc
+rc('text', usetex=False) 
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
