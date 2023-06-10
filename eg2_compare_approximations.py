@@ -11,7 +11,7 @@ from material_parameters import *
 from optimize_alpha import opt1, opt2, opt4, naive
 from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient
 from matplotlib import rc
-rc('text', usetex=False) 
+rc('text', usetex=True) 
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
@@ -29,7 +29,7 @@ n_gauss = mesh['n_gauss']
 strain_dof = mesh['strain_dof']
 global_gradient = mesh['global_gradient']
 n_gp = mesh['n_integration_points']
-n_modes = ref[0]['strain_localization'].shape[-1]
+n_modes = ref[0]['plastic_modes'].shape[-1]
 
 _, samples = read_h5(file_name, data_path, [temp1, temp2], get_mesh=False)
 

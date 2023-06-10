@@ -1,7 +1,7 @@
 import numpy as np
 from numba import jit, prange
 
-@jit(nopython=True, cache=True, parallel=True, nogil=True)
+# @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def interpolate_fluctuation_modes(E01, mat_stiffness, mat_thermal_strain, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
                                   n_gp):
     K = np.zeros((2 * (n_modes + 7), 2 * (n_modes + 7)))
@@ -13,8 +13,7 @@ def interpolate_fluctuation_modes(E01, mat_stiffness, mat_thermal_strain, plasti
     for gp_id in prange(n_gp):
         phase_id = mat_id[gp_id // n_gauss]
 
-        P = np.hstack((-I, mat_thermal_strain[phase_id], plastic_modes[gp_id])) # existing code
-        # P = np.hstack((-I, plastic_modes[gp_id], mat_thermal_strain[phase_id])) # why not this way?
+        P = np.hstack((-I, mat_thermal_strain[phase_id], plastic_modes[gp_id]))
 
         E01t_C = E01[gp_id].T @ mat_stiffness[phase_id]
 

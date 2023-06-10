@@ -8,12 +8,12 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 import time
 from microstructures import *
-from utilities import read_h5, read_snapshots, mode_identification, mode_identification_svd, compute_tabular_data, save_tabular_data
+from utilities import read_h5, read_snapshots, mode_identification, compute_tabular_data, save_tabular_data
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(
     "file_name", "data_path", "temp1", "temp2", "n_tests", "sampling_alphas"
-)(microstructures[0])
+)(microstructures[-1])
 print(file_name, "\t", data_path)
 
 sample_temperatures = np.linspace(temp1, temp2, num=n_tests)
@@ -28,22 +28,18 @@ n_integration_points = mesh["n_integration_points"]
 global_gradient = mesh["global_gradient"]
 n_gp = mesh["n_integration_points"]
 disc = mesh["combo_discretisation"]
+vol_frac = mesh['volume_fraction'][0]
 
 #%% Mode identification
 
-# TODO: Read plastic snapshots from h5 file
+# Read plastic snapshots from h5 file
 plastic_snapshots = read_snapshots(file_name, data_path)
 print('plastic_snapshots.shape:', plastic_snapshots.shape)
 
-# Mode identification using SVD
+# Identification of plastic modes
 r_min = 1e-8
-plastic_modes_svd = mode_identification_svd(plastic_snapshots, r_min)
+plastic_modes_svd = mode_identification(plastic_snapshots, vol_frac, r_min)
 print('plastic_modes_svd.shape:', plastic_modes_svd.shape)
-
-# Mode identification using POD
-r_min = 1e-8
-plastic_modes_pod = mode_identification(plastic_snapshots, r_min)
-print('plastic_modes_pod.shape:', plastic_modes_pod.shape)
 
 # TODO: save identified plastic modes to h5 file
 
@@ -54,14 +50,16 @@ sample = samples[0]  # For now, choose one arbitrary sample
 plastic_modes = sample['plastic_modes']
 N_modes = plastic_modes.shape[2]
 strain_localization = sample["strain_localization"]
-# Add dummy data to strain_localization until we have real data:
-# strain_localization = np.concatenate([strain_localization, np.random.rand(n_integration_points, strain_dof, N_modes)], axis=2)
+
+# Compare computed plastic modes with plastic modes from h5 file
+assert np.allclose(plastic_modes, plastic_modes_svd), ''
+
 mat_stiffness = sample["mat_stiffness"]
 mat_thermal_strain = sample["mat_thermal_strain"]
 #A_bar, D_xi, tau_theta, C_bar = compute_ntfa_matrices(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mesh)
 
 # TODO: compute system matrices for multiple intermediate temperatures in an efficient way
-n_temp = 1000
+n_temp = 100
 temperatures = np.linspace(temp1, temp2, num=n_temp)
 start_time = time.time()
 A_bar, D_xi, tau_theta, C_bar = compute_tabular_data(samples, mesh, temperatures)

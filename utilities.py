@@ -521,9 +521,9 @@ def read_snapshots(file_name, data_path):
     return plastic_snapshots
 
 
-def mode_identification(plastic_snapshots, r_min):
+def mode_identification_iterative(plastic_snapshots, vol_frac, r_min=1e-8):
     """
-    Identification of plastic strain modes µ using POD and renormalization
+    Identification of plastic strain modes µ using an iterative algorithm and renormalization
     :param strain_snapshots: plastic strain snapshots eps_p (ordered as described in `read_snapshots`)
         with shape (n_integration_points, strain_dof, n_frames)
     :param r_min: stop criterion
@@ -547,13 +547,14 @@ def mode_identification(plastic_snapshots, r_min):
             # Generate new strain mode:
             plastic_mode = (eps_i - np.tensordot(k, plastic_modes, axes=(0,2))) / np.sqrt(r)
             plastic_modes = np.concatenate([plastic_modes, np.expand_dims(plastic_mode, 2)], axis=2)
-    # Renormalize all modes:
+    # Renormalize plastic modes
     for i in range(n_modes):
-        plastic_modes[:, :, i] = plastic_modes[:, :, i] / volume_average(norm_2(plastic_modes[:, :, i]))  # TODO: average only over specific phase!
+        weighting_factor = vol_frac / volume_average(norm_2(plastic_modes[:, :, i]))
+        plastic_modes[:, :, i] = plastic_modes[:, :, i] * weighting_factor * np.sign(plastic_modes[0, 0, i])
     return plastic_modes
 
 
-def mode_identification_svd(plastic_snapshots, r_min=1e-8):
+def mode_identification(plastic_snapshots, vol_frac, r_min=1e-8):
     """
     Identification of plastic strain modes µ using POD and renormalization
     :param strain_snapshots: plastic strain snapshots eps_p (ordered as described in `read_snapshots`)
@@ -568,6 +569,10 @@ def mode_identification_svd(plastic_snapshots, r_min=1e-8):
     s = s / s[0]
     n_modes = np.argwhere(s > r_min).size
     plastic_modes = u[:, :n_modes].reshape((strain_dof, n_integration_points, n_modes)).transpose(1, 0, 2)
+    # Renormalize plastic modes
+    for i in range(n_modes):
+        weighting_factor = vol_frac / volume_average(norm_2(plastic_modes[:, :, i]))
+        plastic_modes[:, :, i] = plastic_modes[:, :, i] * weighting_factor * np.sign(plastic_modes[0, 0, i])
     return plastic_modes
 
 
@@ -688,6 +693,7 @@ def compute_tabular_data(samples, mesh, temperatures):
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def compute_tabular_data_efficient(samples, mesh, temperatures):
     """
+    WIP
     """
     mat_id = mesh['mat_id']
     n_gauss = mesh['n_gauss']
