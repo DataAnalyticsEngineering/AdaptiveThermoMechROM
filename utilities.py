@@ -279,10 +279,15 @@ def verify_data(mesh, sample):
     vol_frac0 = mesh['volume_fraction'][0]
     vol_frac1 = mesh['volume_fraction'][1]
 
-    # TODO: reenable assert when using real data
-    #assert err(average_stress, \
-    #           vol_frac0 * average_stress_0 + vol_frac1 * average_stress_1) < convergence_tolerance, \
-    #    'phasewise volume average is not admissible'
+    assert err(average_stress, \
+               vol_frac0 * average_stress_0 + vol_frac1 * average_stress_1) < convergence_tolerance, \
+        'phasewise volume average is not admissible'
+
+    plastic_modes = sample['plastic_modes']
+    n_modes = plastic_modes.shape[-1]
+    gramian = volume_average(np.einsum('ndi,ndj->nij', plastic_modes, plastic_modes))
+    assert np.allclose(gramian, np.diag(np.diag(gramian))), 'plastic modes are not orthogonal'
+    assert np.allclose([volume_average(norm_2(plastic_modes[:,:,i])) for i in range(n_modes)], vol_frac0), 'plastic modes are not normalized correctly'
 
 
 def compute_residual(stress, dof, n_elements, element_dof, n_gauss, assembly_idx, gradient_operators_times_w):
