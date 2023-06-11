@@ -760,6 +760,9 @@ def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta
         dset_sim = file[data_path]
         dset = dset_sim.parent
         ntfa_path = re.sub('_sim$', '_ntfa', dset_sim.name)
+        if ntfa_path in file:
+            # Delete h5 group with tabular data if it already exists
+            del file[ntfa_path]
         dset_ntfa = dset.create_group(ntfa_path)
         [dset_ntfa.attrs.create(key, value) for key, value in dset_sim.attrs.items()]
         dset_temperatures = dset_ntfa.create_dataset('temperatures', data=temperatures)
