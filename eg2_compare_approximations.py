@@ -19,7 +19,7 @@ file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_
 print(file_name, '\t', data_path)
 
 n_loading_directions = 10
-n_tests = 10
+n_tests = 100
 test_temperatures = np.linspace(temp1, temp2, num=n_tests)
 test_alphas = np.linspace(0, 1, num=n_tests)
 

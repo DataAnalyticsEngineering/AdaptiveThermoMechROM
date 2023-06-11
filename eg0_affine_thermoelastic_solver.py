@@ -7,7 +7,7 @@ from operator import itemgetter
 from microstructures import *
 from utilities import verify_data, read_h5
 
-for microstructure in microstructures[-1:]:
+for microstructure in microstructures[-2:]:
 
     file_name, data_path, temp1, temp2 = itemgetter('file_name', 'data_path', 'temp1', 'temp2')(microstructure)
 

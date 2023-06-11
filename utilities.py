@@ -1,5 +1,5 @@
 import contextlib
-
+import re
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -285,7 +285,7 @@ def verify_data(mesh, sample):
 
     plastic_modes = sample['plastic_modes']
     n_modes = plastic_modes.shape[-1]
-    gramian = volume_average(np.einsum('ndi,ndj->nij', plastic_modes, plastic_modes))
+    gramian = volume_average(np.einsum('ijk,ijl->ikl', plastic_modes, plastic_modes))
     assert np.allclose(gramian, np.diag(np.diag(gramian))), 'plastic modes are not orthogonal'
     assert np.allclose([volume_average(norm_2(plastic_modes[:,:,i])) for i in range(n_modes)], vol_frac0), 'plastic modes are not normalized correctly'
 
@@ -662,31 +662,35 @@ def compute_tabular_data(samples, mesh, temperatures):
     sample_temperatures = np.array([sample['temperature'] for sample in samples])
     temp1, temp2 = min(sample_temperatures), max(sample_temperatures)
     sample_alphas = (sample_temperatures - temp1) / (temp2 - temp1)
+    plastic_modes = samples[0]['plastic_modes']
     for idx in prange(n_temps):
         temperature = temperatures[idx]
-        alpha = (temperature - temp1) / (temp2 - temp1)
-        upper_bound = np.searchsorted(sample_alphas, alpha)
-        id1 = upper_bound if upper_bound > 0 else 1
-        id0 = id1 - 1
-
-        E0 = samples[id0]['strain_localization']
-        E1 = samples[id1]['strain_localization']
-        E01 = np.ascontiguousarray(np.concatenate((E0, E1), axis=-1))
-
-        sampling_C = np.stack((samples[id0]['mat_stiffness'], samples[id1]['mat_stiffness'])).transpose([1, 0, 2, 3])
-        sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
-        plastic_modes = samples[id0]['plastic_modes']  # TODO: does exist?
-        # normalization_factor_mech = samples[idx]['normalization_factor_mech']  # TODO: does exist?
         ref_C = np.stack(([stiffness_cu(temperature), stiffness_wsc(temperature)]))
         ref_eps = np.expand_dims(np.stack(([thermal_strain_cu(temperature), thermal_strain_wsc(temperature)])), axis=2)
+        alpha = (temperature - temp1) / (temp2 - temp1)
+        upper_bound = np.searchsorted(sample_alphas, alpha)
+        if np.floor(alpha) == alpha:
+            # sample for given temperature exists, no need for interpolation
+            id = upper_bound
+            C, eps = ref_C, ref_eps
+            E = samples[id]['strain_localization']
+            S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
+        else:
+            id1 = upper_bound if upper_bound > 0 else 1
+            id0 = id1 - 1
 
-        # interpolated quantities using an implicit interpolation scheme with four DOF
-        approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
-        Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
-                                                 n_gp)
-        Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
-        # effSopt = volume_average(Sopt4)
-        A_bar[:,:,idx], D_xi[:,:,idx], tau_theta[:,idx], C_bar[:,:,idx] = compute_ntfa_matrices(Sopt4, plastic_modes, approx_eps, mesh)
+            E0 = samples[id0]['strain_localization']
+            E1 = samples[id1]['strain_localization']
+            E01 = np.ascontiguousarray(np.concatenate((E0, E1), axis=-1))
+
+            sampling_C = np.stack((samples[id0]['mat_stiffness'], samples[id1]['mat_stiffness'])).transpose([1, 0, 2, 3])
+            sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
+
+            # interpolated quantities using an implicit interpolation scheme with four DOF
+            C, eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
+            E, _ = interpolate_fluctuation_modes(E01, C, eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes, n_gp)
+            S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
+        A_bar[:, :, idx], D_xi[:, :, idx], tau_theta[:, idx], C_bar[:, :, idx] = compute_ntfa_matrices(S, plastic_modes, eps, mesh)
     return A_bar, D_xi, tau_theta, C_bar
 
 
@@ -745,6 +749,21 @@ def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta
     """
     Save tabular data
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
-    :param ...:
+    :param data_path:
+    :param temperatures:
+    :param A_bar: tabular data for A_bar with shape (strain_dof, strain_dof, n_temp)
+    :param D_xi: tabular data for D_xi with shape (n_modes, n_modes, n_temp)
+    :param tau_theta: tabular data for tau_theta with shape (strain_dof, n_temp)
+    :param C_bar: tabular data for C_bar with shape (strain_dof, strain_dof, n_temp)
     """
-    pass
+    with h5py.File(file_name, 'a') as file:
+        dset_sim = file[data_path]
+        dset = dset_sim.parent
+        ntfa_path = re.sub('_sim$', '_ntfa', dset_sim.name)
+        dset_ntfa = dset.create_group(ntfa_path)
+        [dset_ntfa.attrs.create(key, value) for key, value in dset_sim.attrs.items()]
+        dset_temperatures = dset_ntfa.create_dataset('temperatures', data=temperatures)
+        dset_A_bar = dset_ntfa.create_dataset('A_bar', data=A_bar)
+        dset_D_xi = dset_ntfa.create_dataset('D_xi', data=D_xi)
+        dset_tau_theta = dset_ntfa.create_dataset('tau_theta', data=tau_theta)
+        dset_C_bar = dset_ntfa.create_dataset('C_bar', data=C_bar)
