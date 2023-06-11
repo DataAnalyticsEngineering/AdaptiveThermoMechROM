@@ -109,7 +109,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True, dummy_plastic_dat
         mesh: dictionary that contains microstructural details such as volume fraction, voxel type, ...
         samples: list of simulation results at each temperature
     """
-    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (n_modes + 7) (n_modes + 7 = 6 mechanical + n_modes plastic + 1 thermal expansion)
+    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (n_modes + 7) (n_modes + 7 = 6 mechanical + 1 thermal expansion + n_modes plastic)
 
     samples = []
     with h5py.File(file_name, 'r') as file:
@@ -602,22 +602,22 @@ def compute_ntfa_matrices(stress_localization, plastic_modes, thermal_strain, me
     mat_id = mesh['mat_id']
     n_modes = plastic_modes.shape[2]
     
-    # slice stress localization operator S into S_eps, S_xi, S_theta
+    # slice stress localization operator S into S_eps, S_theta, S_xi
     S_eps = stress_localization[:, :, :strain_dof]
-    S_xi = stress_localization[:, :, strain_dof:(strain_dof + n_modes)]
-    S_theta = stress_localization[:, :, -1]
+    S_theta = stress_localization[:, :, strain_dof]
+    S_xi = stress_localization[:, :, strain_dof+1:]
 
-    # volume averaging S_eps -> C_bar, S_xi -> A_bar, S_theta -> tau_theta
+    # volume averaging S_eps -> C_bar, S_theta -> tau_theta, S_xi -> A_bar
     C_bar = volume_average(S_eps)
-    A_bar = volume_average(S_xi)
     tau_theta = volume_average(S_theta)
+    A_bar = volume_average(S_xi)
 
     # Compute D_xi, D_theta, tau_hat by volume averaging after matrix multiplication
     # plastic_modes has shape (n_integration_points, strain_dof, n_modes) -> transpose
     # plastic_modes_T has shape (n_integration_points, n_modes, strain_dof)
     # thermal_strain has shape (n_integration_points, strain_dof, n_modes) -> transpose
     # S_xi has shape (n_integration_points, strain_dof, n_modes) -> D_xi has shape (n_modes, n_modes)
-    # S_theta has shape (n_integration_points, strain_dof, 1) -> D_theta has shape (N_modes, N_modes)
+    # S_theta has shape (n_integration_points, strain_dof, 1) -> D_theta has shape (n_modes, n_modes)
     plastic_modes_T = plastic_modes.transpose((0, 2, 1))
     thermal_strain_T = thermal_strain.reshape((1, -1))
     D_xi = -volume_average(plastic_modes_T @ S_xi)
