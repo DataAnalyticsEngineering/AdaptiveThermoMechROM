@@ -46,22 +46,24 @@ for microstructure in microstructures[-2:]:
     plastic_modes = samples[0]['plastic_modes']
     assert np.allclose(plastic_modes, plastic_modes_svd), 'Identified plastic modes do not match plastic modes in h5 file'
 
-    # Mode processing to compute system matrices (after eigenstress problems have been solved using FANS)
+    # Mode processing to compute system matrices
 
-    n_temp = 100
+    n_temp = 1000
     temperatures = np.linspace(temp1, temp2, num=n_temp)
     start_time = time.time()
     # TODO: compute system matrices for multiple intermediate temperatures in an efficient way
-    A_bar, D_xi, tau_theta, C_bar = compute_tabular_data(samples, mesh, temperatures)
+    C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta = compute_tabular_data(samples, mesh, temperatures)
     elapsed_time = time.time() - start_time
     print(f'Computed tabular data for {n_temp} temperatures in {elapsed_time}s')
-    print('A_bar.shape:', A_bar.shape)
-    print('D_xi.shape:', D_xi.shape)
-    print('tau_theta.shape:', tau_theta.shape)
     print('C_bar.shape:', C_bar.shape)
+    print('tau_theta.shape:', tau_theta.shape)
+    print('A_bar.shape:', A_bar.shape)
+    print('tau_xi.shape:', tau_xi.shape)
+    print('D_xi.shape:', D_xi.shape)
+    print('D_theta.shape:', D_theta.shape)
 
     # Save system matrices for multiple temperatures as tabular data
-    save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar)
+    save_tabular_data(file_name, data_path, temperatures, C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta)
     # Tabular data is saved to the input h5 file and can be copied to a new h5 file using e.g.
     # h5copy -i input/file.h5 -o input/file_ntfa.h5 -s ms_1p/dset0_ntfa -d ms_1p/dset0_ntfa -p
 

@@ -576,12 +576,14 @@ def mode_identification(plastic_snapshots, vol_frac, r_min=1e-8):
     return plastic_modes
 
 
-def compute_ntfa_matrices(stress_localization, plastic_modes, thermal_strain, mesh):
+def compute_ntfa_matrices(strain_localization, stress_localization, plastic_modes, thermal_strain, mesh):
     """
     Processing of the plastic strain modes µ to compute the matrices A_bar, D_xi, C_bar and the vector tau_theta
     as tabular data at given temperatures
     :param strain_localization: strain localization 3D array
-        with shape (n_integration_points, strain_dof, 7)
+        with shape (n_integration_points, strain_dof, 7 + n_modes)
+    :param stress_localization: stress localization 3D array
+        with shape (n_integration_points, strain_dof, 7 + n_modes)
     :param mat_stiffness: stiffness tensors of the phases
         with shape (n_phases, strain_dof, strain_dof)
     :param mat_id: material phase identification
@@ -593,40 +595,48 @@ def compute_ntfa_matrices(stress_localization, plastic_modes, thermal_strain, me
         with shape (n_integration_points, strain_dof, N_modes)
     :param ...:
     :return:
-        A_bar with shape (strain_dof, strain_dof)
-        D_xi with shape (strain_dof, N_modes)
-        tau_theta with shape (strain_dof,)
         C_bar with shape (strain_dof, strain_dof)
+        tau_theta with shape (strain_dof,)
+        A_bar with shape (strain_dof, strain_dof)
+        tau_xi with shape (n_modes,)
+        D_xi with shape (strain_dof, n_modes)
+        D_theta with shape (strain_dof, n_modes)
     """
     strain_dof = mesh['strain_dof']
     mat_id = mesh['mat_id']
     n_modes = plastic_modes.shape[2]
     
+    # slice strain localization operator E into E_eps, E_theta, E_xi
+    E_eps = strain_localization[:, :, :strain_dof]
+    E_theta = strain_localization[:, :, strain_dof]
+    E_xi = strain_localization[:, :, strain_dof + 1:]
+
+    
     # slice stress localization operator S into S_eps, S_theta, S_xi
     S_eps = stress_localization[:, :, :strain_dof]
     S_theta = stress_localization[:, :, strain_dof]
-    S_xi = stress_localization[:, :, strain_dof+1:]
+    S_xi = stress_localization[:, :, strain_dof + 1:]
 
-    # volume averaging S_eps -> C_bar, S_theta -> tau_theta, S_xi -> A_bar
-    C_bar = volume_average(S_eps)
-    tau_theta = volume_average(S_theta)
-    A_bar = volume_average(S_xi)
+    I = np.eye(6)
+    # Compute C_bar via < (E_eps + I).T @ S_eps >
+    C_bar = volume_average((E_eps + I).transpose((0, 2, 1)) @ S_eps)
 
-    # Compute D_xi, D_theta, tau_hat by volume averaging after matrix multiplication
-    # plastic_modes has shape (n_integration_points, strain_dof, n_modes) -> transpose
-    # plastic_modes_T has shape (n_integration_points, n_modes, strain_dof)
-    # thermal_strain has shape (n_integration_points, strain_dof, n_modes) -> transpose
-    # S_xi has shape (n_integration_points, strain_dof, n_modes) -> D_xi has shape (n_modes, n_modes)
-    # S_theta has shape (n_integration_points, strain_dof, 1) -> D_theta has shape (n_modes, n_modes)
-    plastic_modes_T = plastic_modes.transpose((0, 2, 1))
-    thermal_strain_T = thermal_strain.reshape((1, -1))
-    D_xi = -volume_average(plastic_modes_T @ S_xi)
-    # D_theta = -volume_average(thermal_strain_T @ S_theta)
-    # tau_hat = -volume_average(plastic_modes_T @ S_theta)
+    # Compute tau_theta via < (E_eps + I).T @ S_theta >
+    tau_theta = volume_average(np.einsum('nij,nj->ni', (E_eps + I).transpose((0, 2, 1)), S_theta))
 
-    # Should A_bar be transposed before saving data?
+    # Compute A_bar via < (E_eps + I).T @ S_eps >
+    A_bar = volume_average((E_eps + I).transpose((0, 2, 1)) @ S_xi)
 
-    return A_bar, D_xi, tau_theta, C_bar
+    # Compute tau_xi via < (E_theta - P_theta).T @ S_xi >
+    tau_xi = volume_average(np.einsum('ni,nij->nj', E_theta - thermal_strain, S_xi))
+
+    # Compute D_xi via < (E_xi - P_xi).T @ S_xi >
+    D_xi = volume_average((E_xi - plastic_modes).transpose((0, 2, 1)) @ S_xi)
+
+    # Compute D_theta via < (E_theta - P_theta).T @ S_theta >
+    D_theta = volume_average(np.einsum('ni,ni->n', E_theta - thermal_strain, S_theta))
+
+    return C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta
 
 
 def compute_tabular_data_for_ms(ms_id, temperatures):
@@ -653,10 +663,12 @@ def compute_tabular_data(samples, mesh, temperatures):
     n_phases = len(np.unique(mat_id))
     n_modes = samples[0]['plastic_modes'].shape[-1]
     n_temps = len(temperatures)
-    A_bar = np.zeros((strain_dof, n_modes, n_temps))
-    D_xi = np.zeros((n_modes, n_modes, n_temps))
-    tau_theta = np.zeros((strain_dof, n_temps))
     C_bar = np.zeros((strain_dof, strain_dof, n_temps))
+    tau_theta = np.zeros((strain_dof, n_temps))
+    A_bar = np.zeros((strain_dof, n_modes, n_temps))
+    tau_xi = np.zeros((n_modes, n_temps))
+    D_xi = np.zeros((n_modes, n_modes, n_temps))
+    D_theta = np.zeros((n_temps))
     # interpolate_temp = lambda x1, x2, alpha: x1 + alpha * (x2 - x1)
     # dns_temperatures = interpolate_temp(temp1, temp2, sample_alphas)
     sample_temperatures = np.array([sample['temperature'] for sample in samples])
@@ -690,15 +702,15 @@ def compute_tabular_data(samples, mesh, temperatures):
             C, eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
             E, _ = interpolate_fluctuation_modes(E01, C, eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes, n_gp)
             S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
-        A_bar[:, :, idx], D_xi[:, :, idx], tau_theta[:, idx], C_bar[:, :, idx] = compute_ntfa_matrices(S, plastic_modes, eps, mesh)
-    return A_bar, D_xi, tau_theta, C_bar
+        C_bar[:, :, idx], tau_theta[:, idx], A_bar[:, :, idx], tau_xi[:, idx], D_xi[:, :, idx], D_theta[idx] = \
+            compute_ntfa_matrices(E, S, plastic_modes, eps[0,:,0], mesh)
+    return C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta
 
 
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def compute_tabular_data_efficient(samples, mesh, temperatures):
     """
     WIP
-    """
     mat_id = mesh['mat_id']
     n_gauss = mesh['n_gauss']
     strain_dof = mesh['strain_dof']
@@ -742,19 +754,23 @@ def compute_tabular_data_efficient(samples, mesh, temperatures):
         Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
         # effSopt = volume_average(Sopt4)
         A_bar[:,:,idx], D_xi[:,:,idx], tau_theta[:,idx], C_bar[:,:,idx] = compute_ntfa_matrices(Sopt4, plastic_modes, mesh)
-    return A_bar, D_xi, tau_theta, C_bar
+    return C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta
+    """
+    pass
 
 
-def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta, C_bar):
+def save_tabular_data(file_name, data_path, temperatures, C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta):
     """
     Save tabular data
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
     :param data_path:
     :param temperatures:
-    :param A_bar: tabular data for A_bar with shape (strain_dof, strain_dof, n_temp)
-    :param D_xi: tabular data for D_xi with shape (n_modes, n_modes, n_temp)
-    :param tau_theta: tabular data for tau_theta with shape (strain_dof, n_temp)
     :param C_bar: tabular data for C_bar with shape (strain_dof, strain_dof, n_temp)
+    :param tau_theta: tabular data for tau_theta with shape (strain_dof, n_temp)
+    :param A_bar: tabular data for A_bar with shape (strain_dof, strain_dof, n_temp)
+    :param tau_xi: tabular data for tau_xi with shape (n_modes, n_temp)
+    :param D_xi: tabular data for D_xi with shape (n_modes, n_modes, n_temp)
+    :param D_xi: tabular data for D_theta with shape (n_temp)
     """
     with h5py.File(file_name, 'a') as file:
         dset_sim = file[data_path]
@@ -766,7 +782,9 @@ def save_tabular_data(file_name, data_path, temperatures, A_bar, D_xi, tau_theta
         dset_ntfa = dset.create_group(ntfa_path)
         [dset_ntfa.attrs.create(key, value) for key, value in dset_sim.attrs.items()]
         dset_temperatures = dset_ntfa.create_dataset('temperatures', data=temperatures)
-        dset_A_bar = dset_ntfa.create_dataset('A_bar', data=A_bar)
-        dset_D_xi = dset_ntfa.create_dataset('D_xi', data=D_xi)
-        dset_tau_theta = dset_ntfa.create_dataset('tau_theta', data=tau_theta)
         dset_C_bar = dset_ntfa.create_dataset('C_bar', data=C_bar)
+        dset_tau_theta = dset_ntfa.create_dataset('tau_theta', data=tau_theta)
+        dset_A_bar = dset_ntfa.create_dataset('A_bar', data=A_bar)
+        dset_tau_xi = dset_ntfa.create_dataset('tau_xi', data=tau_xi)
+        dset_D_xi = dset_ntfa.create_dataset('D_xi', data=D_xi)
+        dset_D_theta = dset_ntfa.create_dataset('D_theta', data=D_theta)
