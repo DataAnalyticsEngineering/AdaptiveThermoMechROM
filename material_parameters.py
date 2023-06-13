@@ -7,6 +7,7 @@ The example after `if __name__ == "__main__"` uses meter again and it matches th
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
+import utilities
 
 cm = 1 / 2.54  # centimeters in inches
 
@@ -24,6 +25,7 @@ conductivity_cu = lambda x: 4.20749e+05 * x ** 0 + -6.84915e+01 * x ** 1
 heat_capacity_cu = lambda x: 2.94929e+03 * x ** 0 + 2.30217e+00 * x ** 1 + -2.95302e-03 * x ** 2 + 1.47057e-06 * x ** 3
 cte_cu = lambda x: 1.28170e-05 * x ** 0 + 8.23091e-09 * x ** 1
 elastic_modulus_cu = lambda x: 1.35742e+08 * x ** 0 + 5.85757e+03 * x ** 1 + -8.16134e+01 * x ** 2
+hardening_cu = lambda x: 20e+06 * x ** 0
 
 thermal_strain_cu = lambda x: integrate.quad(cte_cu, min_temperature, x)[0] * I2
 shear_modulus_cu = lambda x: elastic_modulus_cu(x) / (2. * (1. + poisson_ratio_cu(x)))
