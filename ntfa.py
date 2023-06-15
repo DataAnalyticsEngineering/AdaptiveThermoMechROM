@@ -209,8 +209,8 @@ def compute_tabular_data(samples, mesh, temperatures):
     D_theta = np.zeros((n_temps))
     C0 = np.zeros((strain_dof, strain_dof, n_temps))
     C1 = np.zeros((strain_dof, strain_dof, n_temps))
-    A0 = np.zeros((strain_dof, n_modes, n_temps))
-    A1 = np.zeros((strain_dof, n_modes, n_temps))
+    A0 = np.zeros((strain_dof, 7 + n_modes, n_temps))
+    A1 = np.zeros((strain_dof, 7 + n_modes, n_temps))
     vol_frac0 = mesh['volume_fraction'][0]
     vol_frac1 = mesh['volume_fraction'][1]
     plastic_modes = samples[0]['plastic_modes']
@@ -253,7 +253,7 @@ def compute_tabular_data(samples, mesh, temperatures):
         
         # Compute phase average stresses
         A0_full, A1_full = compute_phase_average_stress_localizations(E, ref_C, ref_eps, plastic_modes, mesh)
-        A0[:, :, idx], A1[:, :, idx] = A0_full[:, strain_dof + 1:], A1_full[:, strain_dof + 1:]
+        A0[:, :, idx], A1[:, :, idx] = A0_full, A1_full
 
         # Save phase-wise stiffness tensors
         C0[:, :, idx], C1[:, :, idx] = ref_C[0, :, :], ref_C[1, :, :]
@@ -349,6 +349,44 @@ def save_tabular_data(file_name, data_path, temperatures, C_bar, tau_theta, A_ba
         dset_A1 = dset_ntfa.create_dataset('A1', data=A1)
         dset_C0 = dset_ntfa.create_dataset('C0', data=C0)
         dset_C1 = dset_ntfa.create_dataset('C1', data=C1)
+
+
+def read_tabular_data(file_name, data_path):
+    """
+    Save tabular data
+    :param file_name: e.g. "input/simple_3d_rve_combo.h5"
+    :param data_path:
+    :return:
+        temperatures:
+        C_bar: tabular data for C_bar with shape (strain_dof, strain_dof, n_temp)
+        tau_theta: tabular data for tau_theta with shape (strain_dof, n_temp)
+        A_bar: tabular data for A_bar with shape (strain_dof, n_modes, n_temp)
+        tau_xi: tabular data for tau_xi with shape (n_modes, n_temp)
+        D_xi: tabular data for D_xi with shape (n_modes, n_modes, n_temp)
+        D_theta: tabular data for D_theta with shape (n_temp)
+        A0: tabular data for A0 with shape (strain_dof, n_modes, n_temp)
+        A1: tabular data for A1 with shape (strain_dof, n_modes, n_temp)
+        C0: tabular data for C0 with shape (strain_dof, strain_dof, n_temp)
+        C1: tabular data for C1 with shape (strain_dof, strain_dof, n_temp)
+    """
+    with h5py.File(file_name, 'r') as file:
+        if '_ntfa' in data_path:
+            ntfa_path = data_path
+        else:
+            ntfa_path = re.sub('_sim$', '_ntfa', data_path)
+        dset_ntfa = file[ntfa_path]
+        temperatures = dset_ntfa['temperatures'][:]
+        C_bar = dset_ntfa['C_bar'][:]
+        tau_theta = dset_ntfa['tau_theta'][:]
+        A_bar = dset_ntfa['A_bar'][:]
+        tau_xi = dset_ntfa['tau_xi'][:]
+        D_xi = dset_ntfa['D_xi'][:]
+        D_theta = dset_ntfa['D_theta'][:]
+        A0 = dset_ntfa['A0'][:]
+        A1 = dset_ntfa['A1'][:]
+        C0 = dset_ntfa['C0'][:]
+        C1 = dset_ntfa['C1'][:]
+    return temperatures, C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta, A0, A1, C0, C1
 
 """
 TO BE REMOVED:

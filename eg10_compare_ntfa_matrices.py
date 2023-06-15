@@ -9,64 +9,33 @@ import matplotlib.pyplot as plt
 import time
 from microstructures import *
 from utilities import read_h5
-from ntfa import read_snapshots, mode_identification, compute_tabular_data, save_tabular_data
+from ntfa import read_tabular_data
 
-np.random.seed(0)
-for microstructure in microstructures[-8:]:
-    file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(
+file_name_10, data_path_10, temp1_10, temp2_10, n_tests_10, sampling_alphas_10 = itemgetter(
         "file_name", "data_path", "temp1", "temp2", "n_tests", "sampling_alphas"
-    )(microstructure)
-    print(file_name, "\t", data_path)
+)(microstructures[0])
 
-    sample_temperatures = np.linspace(temp1, temp2, num=n_tests)
+temperatures_10, C_bar_10, tau_theta_10, A_bar_10, tau_xi_10, D_xi_10, D_theta_10, A0_10, A1_10, C0_10, C1_10 = \
+    read_tabular_data(file_name_10, data_path_10)
 
-    mesh, samples = read_h5(file_name, data_path, sample_temperatures)
-    mat_id = mesh["mat_id"]
-    n_gauss = mesh["n_gauss"]
-    strain_dof = mesh["strain_dof"]
-    nodal_dof = mesh["nodal_dof"]
-    n_elements = mesh["n_elements"]
-    n_integration_points = mesh["n_integration_points"]
-    global_gradient = mesh["global_gradient"]
-    n_gp = mesh["n_integration_points"]
-    disc = mesh["combo_discretisation"]
-    vol_frac = mesh['volume_fraction'][0]
+file_name_100, data_path_100, temp1_100, temp2_100, n_tests_100, sampling_alphas_100 = itemgetter(
+        "file_name", "data_path", "temp1", "temp2", "n_tests", "sampling_alphas"
+)(microstructures[-1])
 
-    # Mode identification
+temperatures_100, C_bar_100, tau_theta_100, A_bar_100, tau_xi_100, D_xi_100, D_theta_100, A0_100, A1_100, C0_100, C1_100 = \
+    read_tabular_data(file_name_100, data_path_100)
 
-    # Read plastic snapshots from h5 file
-    plastic_snapshots = read_snapshots(file_name, data_path)
-    print('plastic_snapshots.shape:', plastic_snapshots.shape)
-
-    # Identification of plastic modes
-    r_min = 1e-8
-    # plastic_modes_svd = mode_identification(plastic_snapshots, vol_frac, r_min)
-    # print('plastic_modes_svd.shape:', plastic_modes_svd.shape)
-
-    # Compare computed plastic modes with plastic modes from h5 file
-    plastic_modes = samples[0]['plastic_modes']
-    # assert np.allclose(plastic_modes / np.sign(np.expand_dims(np.expand_dims(plastic_modes[0,0,:], axis=0), axis=0)), plastic_modes_svd), 'Identified plastic modes do not match plastic modes in h5 file'
-
-    # Mode processing to compute system matrices
-
-    n_temp = 1000
-    temperatures = np.linspace(temp1, temp2, num=n_temp)
-    start_time = time.time()
-    # TODO: compute system matrices for multiple intermediate temperatures in an efficient way
-    C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta = compute_tabular_data(samples, mesh, temperatures)
-    elapsed_time = time.time() - start_time
-    print(f'Computed tabular data for {n_temp} temperatures in {elapsed_time}s')
-    print('C_bar.shape:', C_bar.shape)
-    print('tau_theta.shape:', tau_theta.shape)
-    print('A_bar.shape:', A_bar.shape)
-    print('tau_xi.shape:', tau_xi.shape)
-    print('D_xi.shape:', D_xi.shape)
-    print('D_theta.shape:', D_theta.shape)
-
-    # Save system matrices for multiple temperatures as tabular data
-    save_tabular_data(file_name, data_path, temperatures, C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta)
-    # Tabular data is saved to the input h5 file and can be copied to a new h5 file using e.g.
-    # h5copy -i input/file.h5 -o input/file_ntfa.h5 -s ms_1p/dset0_ntfa -d ms_1p/dset0_ntfa -p
-
-#%% Compare interpolated NTFA matrices with exact NTFA matrices
-# TODO: compute errors
+C_bar_diff = C_bar_10 - C_bar_100
+tau_theta_diff = tau_theta_10 - tau_theta_100
+# A_bar_diff
+# tau_xi_diff
+# D_xi_diff
+D_theta_diff = tau_theta_10 - tau_theta_100
+# A0_diff
+# A1_diff
+C0_diff = C0_10 - C0_100
+C1_10 = C1_10 - C1_100
+print('C_bar error:', np.linalg.norm(C_bar_diff, axis=(0,1)) / np.linalg.norm(C_bar_100, axis=(0,1)))
+print('tau_theta error:', np.linalg.norm(tau_theta_diff, axis=0) / np.linalg.norm(tau_theta_100, axis=0))
+print('D_theta error:', np.linalg.norm(D_theta_diff, axis=0) / np.linalg.norm(D_theta_100, axis=0))
+print(C_bar_10.shape, C_bar_100.shape)
