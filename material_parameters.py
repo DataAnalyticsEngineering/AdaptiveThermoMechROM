@@ -27,7 +27,8 @@ cte_cu = lambda x: 1.28170e-05 * x ** 0 + 8.23091e-09 * x ** 1
 elastic_modulus_cu = lambda x: 1.35742e+08 * x ** 0 + 5.85757e+03 * x ** 1 + -8.16134e+01 * x ** 2
 hardening_cu = lambda x: 20e+06 * x ** 0
 
-thermal_strain_cu = lambda x: integrate.quad(cte_cu, min_temperature, x)[0] * I2
+# thermal_strain_cu = lambda x: integrate.quad(cte_cu, min_temperature, x)[0] * I2
+thermal_strain_cu = lambda x: (1.28170e-05 * (x - min_temperature) + 8.23091e-09 * 0.5 * (x ** 2 - min_temperature ** 2)) * I2
 shear_modulus_cu = lambda x: elastic_modulus_cu(x) / (2. * (1. + poisson_ratio_cu(x)))
 bulk_modulus_cu = lambda x: elastic_modulus_cu(x) / (3. * (1. - 2. * poisson_ratio_cu(x)))
 stiffness_cu = lambda x: bulk_modulus_cu(x) * IxI + 2. * shear_modulus_cu(x) * P2
@@ -38,7 +39,8 @@ heat_capacity_wsc = lambda x: 2.39247e+03 * x ** 0 + 6.62775e-01 * x ** 1 + -2.8
 cte_wsc = lambda x: 5.07893e-06 * x ** 0 + 5.67524e-10 * x ** 1
 elastic_modulus_wsc = lambda x: 4.13295e+08 * x ** 0 + -7.83159e+03 * x ** 1 + -3.65909e+01 * x ** 2 + 5.48782e-03 * x ** 3
 
-thermal_strain_wsc = lambda x: integrate.quad(cte_wsc, min_temperature, x)[0] * I2
+# thermal_strain_wsc = lambda x: integrate.quad(cte_wsc, min_temperature, x)[0] * I2
+thermal_strain_wsc = lambda x: (5.07893e-06 * (x - min_temperature) + 5.67524e-10 * 0.5 * (x ** 2 - min_temperature ** 2)) * I2
 shear_modulus_wsc = lambda x: elastic_modulus_wsc(x) / (2. * (1. + poisson_ratio_wsc(x)))
 bulk_modulus_wsc = lambda x: elastic_modulus_wsc(x) / (3. * (1. - 2. * poisson_ratio_wsc(x)))
 stiffness_wsc = lambda x: bulk_modulus_wsc(x) * IxI + 2. * shear_modulus_wsc(x) * P2
