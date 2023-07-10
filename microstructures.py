@@ -130,123 +130,188 @@ microstructures = [
 #     'n_tests': 10,
 #     'sampling_alphas': None
 # },
+# {
+#     'data_path': '/ms_1p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset1_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset2_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset3_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_15p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_15p/dset1_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# },{
+#     'data_path': '/ms_15p/dset2_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_1p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_4x4x4_100samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 100,
+#     'sampling_alphas': None
+# },{
+#     'data_path': '/ms_1p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset1_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset2_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_9p/dset3_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_15p/dset0_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_15p/dset1_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# }, {
+#     'data_path': '/ms_15p/dset2_sim',
+#     'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# },
 {
     'data_path': '/ms_1p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
+},
+{
     'data_path': '/ms_9p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
+},
+{
     'data_path': '/ms_9p/dset1_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
+},
+{
     'data_path': '/ms_9p/dset2_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
-    'data_path': '/ms_9p/dset3_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
+},
+# {
+#     'data_path': '/ms_9p/dset3_sim',
+#     'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
+#     'temp1': 300,
+#     'temp2': 1300,
+#     'n_tests': 10,
+#     'sampling_alphas': None
+# },
+{
     'data_path': '/ms_15p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
+},
+{
     'data_path': '/ms_15p/dset1_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-},{
+},
+{
     'data_path': '/ms_15p/dset2_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_10samples.h5"),
+    'file_name': path("input/simple_3d_rve_B1-B6_16x16x16_2samples.h5"),
     'temp1': 300,
     'temp2': 1300,
-    'n_tests': 10,
+    'n_tests': 2,
     'sampling_alphas': None
-}, {
-    'data_path': '/ms_1p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_4x4x4_100samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 100,
-    'sampling_alphas': None
-},{
-    'data_path': '/ms_1p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_9p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_9p/dset1_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_9p/dset2_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_9p/dset3_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_15p/dset0_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_15p/dset1_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}, {
-    'data_path': '/ms_15p/dset2_sim',
-    'file_name': path("input/simple_3d_rve_16x16x16_10samples.h5"),
-    'temp1': 300,
-    'temp2': 1300,
-    'n_tests': 10,
-    'sampling_alphas': None
-}]
+}
+]

@@ -12,7 +12,7 @@ from utilities import read_h5
 from ntfa import read_snapshots, mode_identification, compute_tabular_data, save_tabular_data
 
 np.random.seed(0)
-for microstructure in microstructures[-8:]:
+for microstructure in microstructures[:]:
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(
         "file_name", "data_path", "temp1", "temp2", "n_tests", "sampling_alphas"
     )(microstructure)
