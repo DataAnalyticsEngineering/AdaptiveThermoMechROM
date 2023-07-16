@@ -82,7 +82,7 @@ def mode_identification(plastic_snapshots, vol_frac, r_min=1e-8):
     return plastic_modes
 
 
-def compute_ntfa_matrices(strain_localization, stress_localization, plastic_modes, thermal_strain, mesh):
+def compute_ntfa_matrices(strain_localization, stress_localization, plastic_modes, mat_thermal_strain, mesh):
     """
     Processing of the plastic strain modes µ to compute the matrices A_bar, D_xi, C_bar and the vector tau_theta
     as tabular data at given temperatures
@@ -106,11 +106,13 @@ def compute_ntfa_matrices(strain_localization, stress_localization, plastic_mode
         A_bar with shape (strain_dof, strain_dof)
         tau_xi with shape (n_modes,)
         D_xi with shape (strain_dof, n_modes)
-        D_theta with shape (strain_dof, n_modes)
+        D_theta with shape (1,)
     """
     strain_dof = mesh['strain_dof']
     mat_id = mesh['mat_id']
     n_modes = plastic_modes.shape[2]
+    n_gp = mesh['n_integration_points']
+    n_gauss = mesh['n_gauss']
     
     # slice strain localization operator E into E_eps, E_theta, E_xi
     E_eps = strain_localization[:, :, :strain_dof]
@@ -134,13 +136,21 @@ def compute_ntfa_matrices(strain_localization, stress_localization, plastic_mode
     A_bar = volume_average((E_eps + I).transpose((0, 2, 1)) @ S_xi)
 
     # Compute tau_xi via < (E_theta - P_theta).T @ S_xi >
-    tau_xi = volume_average(np.einsum('ni,nij->nj', E_theta - thermal_strain, S_xi))
+    # Account for the phase-wise thermal strain by an explicit summation over all integration points
+    tau_xi = np.zeros((1, n_modes))
+    for gp_id in prange(n_gp):
+        phase_id = mat_id[gp_id // n_gauss]
+        tau_xi += (E_theta[gp_id] - mat_thermal_strain[phase_id].T) @ S_xi[gp_id] / n_gp
 
     # Compute D_xi via < (E_xi - P_xi).T @ S_xi >
     D_xi = volume_average((E_xi - plastic_modes).transpose((0, 2, 1)) @ S_xi)
 
     # Compute D_theta via < (E_theta - P_theta).T @ S_theta >
-    D_theta = volume_average(np.einsum('ni,ni->n', E_theta - thermal_strain, S_theta))
+    # Account for the phase-wise thermal strain by an explicit summation over all integration points
+    D_theta = 0.
+    for gp_id in prange(n_gp):
+        phase_id = mat_id[gp_id // n_gauss]
+        D_theta += (E_theta[gp_id] - mat_thermal_strain[phase_id].T) @ S_theta[gp_id] / n_gp
 
     return C_bar, tau_theta, A_bar, tau_xi, D_xi, D_theta
 
@@ -249,7 +259,7 @@ def compute_tabular_data(samples, mesh, temperatures):
 
         # Compute NTFA matrices
         C_bar[:, :, idx], tau_theta[:, idx], A_bar[:, :, idx], tau_xi[:, idx], D_xi[:, :, idx], D_theta[idx] = \
-            compute_ntfa_matrices(E, S, plastic_modes, eps[0,:,0], mesh)
+            compute_ntfa_matrices(E, S, plastic_modes, eps, mesh)
         
         # Compute phase average stresses
         A0_full, A1_full = compute_phase_average_stress_localizations(E, ref_C, ref_eps, plastic_modes, mesh)
