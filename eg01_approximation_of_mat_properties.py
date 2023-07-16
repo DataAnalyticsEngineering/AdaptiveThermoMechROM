@@ -6,6 +6,8 @@ import numpy.linalg as la
 from material_parameters import *
 from optimize_alpha import naive, opt1, opt2, opt4
 from utilities import plot_and_save, cm
+from matplotlib import rc
+rc('text', usetex=True)
 
 temp1 = 300
 temp2 = 1300
