@@ -206,9 +206,7 @@ def compute_tabular_data(samples, mesh, temperatures):
     mat_id = mesh['mat_id']
     n_gauss = mesh['n_gauss']
     strain_dof = mesh['strain_dof']
-    global_gradient = mesh['global_gradient']
     n_gp = mesh['n_integration_points']
-    n_phases = len(np.unique(mat_id))
     n_modes = samples[0]['plastic_modes'].shape[-1]
     n_temps = len(temperatures)
     C_bar = np.zeros((strain_dof, strain_dof, n_temps))
@@ -221,11 +219,7 @@ def compute_tabular_data(samples, mesh, temperatures):
     C1 = np.zeros((strain_dof, strain_dof, n_temps))
     A0 = np.zeros((strain_dof, 7 + n_modes, n_temps))
     A1 = np.zeros((strain_dof, 7 + n_modes, n_temps))
-    vol_frac0 = mesh['volume_fraction'][0]
-    vol_frac1 = mesh['volume_fraction'][1]
     plastic_modes = samples[0]['plastic_modes']
-    # interpolate_temp = lambda x1, x2, alpha: x1 + alpha * (x2 - x1)
-    # dns_temperatures = interpolate_temp(temp1, temp2, sample_alphas)
     sample_temperatures = np.array([sample['temperature'] for sample in samples])
     temp1, temp2 = min(sample_temperatures), max(sample_temperatures)
     sample_alphas = (sample_temperatures - temp1) / (temp2 - temp1)
@@ -238,7 +232,7 @@ def compute_tabular_data(samples, mesh, temperatures):
         if np.floor(alpha) == alpha:
             # sample for given temperature exists, no need for interpolation
             id = upper_bound
-            C, eps = ref_C, ref_eps
+            approx_C, approx_eps = ref_C, ref_eps
             E = samples[id]['strain_localization']
             S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
         else:
@@ -253,13 +247,13 @@ def compute_tabular_data(samples, mesh, temperatures):
             sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
 
             # interpolated quantities using an implicit interpolation scheme with four DOF
-            C, eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
-            E, _ = interpolate_fluctuation_modes(E01, C, eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes, n_gp)
+            approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
+            E, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes, n_gp)
             S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
 
         # Compute NTFA matrices
         C_bar[:, :, idx], tau_theta[:, idx], A_bar[:, :, idx], tau_xi[:, idx], D_xi[:, :, idx], D_theta[idx] = \
-            compute_ntfa_matrices(E, S, plastic_modes, eps, mesh)
+            compute_ntfa_matrices(E, S, plastic_modes, ref_eps, mesh)
         
         # Compute phase average stresses
         A0_full, A1_full = compute_phase_average_stress_localizations(E, ref_C, ref_eps, plastic_modes, mesh)

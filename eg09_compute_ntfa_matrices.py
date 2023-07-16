@@ -12,7 +12,7 @@ from utilities import read_h5
 from ntfa import read_snapshots, mode_identification, compute_tabular_data, save_tabular_data
 
 np.random.seed(0)
-for microstructure in microstructures[:]:
+for microstructure in microstructures:
     file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(
         "file_name", "data_path", "temp1", "temp2", "n_tests", "sampling_alphas"
     )(microstructure)
@@ -46,7 +46,7 @@ for microstructure in microstructures[:]:
     # Compare computed plastic modes with plastic modes from h5 file
     plastic_modes = samples[0]['plastic_modes']
     plastic_modes = plastic_modes_svd
-    # assert np.allclose(plastic_modes / np.sign(np.expand_dims(np.expand_dims(plastic_modes[0,0,:], axis=0), axis=0)), plastic_modes_svd), 'Identified plastic modes do not match plastic modes in h5 file'
+    assert np.allclose(plastic_modes / np.sign(np.expand_dims(np.expand_dims(plastic_modes[0,0,:], axis=0), axis=0)), plastic_modes_svd), 'Identified plastic modes do not match plastic modes in h5 file'
 
     # Mode processing to compute system matrices
 
