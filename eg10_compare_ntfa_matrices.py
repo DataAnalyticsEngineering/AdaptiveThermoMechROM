@@ -3,12 +3,7 @@ Demo code for plastic mode identification and processing, i.e. computation of th
 """
 #%%
 from operator import itemgetter
-
-import numpy.linalg as la
-import matplotlib.pyplot as plt
-import time
 from microstructures import *
-from utilities import read_h5
 from ntfa import read_tabular_data
 
 file_name_10, data_path_10, temp1_10, temp2_10, n_tests_10, sampling_alphas_10 = itemgetter(

@@ -3,9 +3,6 @@ Demo code for plastic mode identification and processing, i.e. computation of th
 """
 #%%
 from operator import itemgetter
-
-import numpy.linalg as la
-import matplotlib.pyplot as plt
 import time
 from microstructures import *
 from utilities import read_h5
