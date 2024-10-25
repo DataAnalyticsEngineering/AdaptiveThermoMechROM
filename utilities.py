@@ -1,5 +1,4 @@
 import contextlib
-import re
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,9 +6,6 @@ import numpy.linalg as la
 import scipy.sparse
 from numba import jit, prange
 from sympy import symbols, lambdify, Array
-from operator import itemgetter
-from optimize_alpha import opt4
-from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
 
 plt.rcParams.update({

@@ -4,8 +4,14 @@ For further information, see https://github.com/DataAnalyticsEngineering/ThermoN
 """
 import numpy as np
 import h5py
-from utilities import *
-from material_parameters import *
+import re
+from operator import itemgetter
+from utilities import read_h5, construct_stress_localization, construct_stress_localization_phases, \
+    volume_average, volume_average_phases, norm_2
+from material_parameters import stiffness_cu, stiffness_wsc, thermal_strain_cu, thermal_strain_wsc
+from interpolate_fluctuation_modes import interpolate_fluctuation_modes
+from optimize_alpha import opt4
+from microstructures import microstructures
 from tqdm import tqdm
 
 
@@ -16,7 +22,7 @@ def read_snapshots(file_name, data_path):
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
     :param data_path: the path to the simulation results within the h5 file, e.g. '/ms_1p/dset0_sim'
     :return:
-        strain_snapshots: plastic strain snapshots eps_p 
+        strain_snapshots: plastic strain snapshots eps_p
             with shape (n_integration_points, strain_dof, n_frames)
     """
     plastic_snapshots = None
@@ -76,8 +82,8 @@ def compute_ntfa_matrices(strain_localization, stress_localization, plastic_mode
     n_modes = plastic_modes.shape[2]
     n_gp = mesh['n_integration_points']
     n_gauss = mesh['n_gauss']
-    I = np.eye(6)
-    
+    I2 = np.eye(6)
+
     # slice strain localization operator E into E_eps, E_theta, E_xi
     E_eps = strain_localization[:, :, :strain_dof]
     E_theta = strain_localization[:, :, strain_dof]
@@ -89,18 +95,18 @@ def compute_ntfa_matrices(strain_localization, stress_localization, plastic_mode
     S_xi = stress_localization[:, :, strain_dof + 1:]
 
     # Compute C_bar via < (E_eps + I).T @ S_eps >
-    C_bar = volume_average((E_eps + I).transpose((0, 2, 1)) @ S_eps)
+    C_bar = volume_average((E_eps + I2).transpose((0, 2, 1)) @ S_eps)
 
     # Compute tau_theta via < (E_eps + I).T @ S_theta >
-    tau_theta = volume_average(np.einsum('nij,nj->ni', (E_eps + I).transpose((0, 2, 1)), S_theta))
+    tau_theta = volume_average(np.einsum('nij,nj->ni', (E_eps + I2).transpose((0, 2, 1)), S_theta))
 
     # Compute A_bar via < (E_eps + I).T @ S_eps >
-    A_bar = volume_average((E_eps + I).transpose((0, 2, 1)) @ S_xi)
+    A_bar = volume_average((E_eps + I2).transpose((0, 2, 1)) @ S_xi)
 
     # Compute tau_xi via < (E_theta - P_theta).T @ S_xi >
     # Account for the phase-wise thermal strain by an explicit summation over all integration points
     tau_xi = np.zeros((1, n_modes))
-    for gp_id in prange(n_gp):
+    for gp_id in range(n_gp):
         phase_id = mat_id[gp_id // n_gauss]
         tau_xi += (np.expand_dims(E_theta[gp_id], axis=1) - mat_thermal_strain[phase_id]).T @ S_xi[gp_id] / n_gp
 
@@ -110,7 +116,7 @@ def compute_ntfa_matrices(strain_localization, stress_localization, plastic_mode
     # Compute D_theta via < (E_theta - P_theta).T @ S_theta >
     # Account for the phase-wise thermal strain by an explicit summation over all integration points
     D_theta = 0.
-    for gp_id in prange(n_gp):
+    for gp_id in range(n_gp):
         phase_id = mat_id[gp_id // n_gauss]
         D_theta += (np.expand_dims(E_theta[gp_id], axis=1) - mat_thermal_strain[phase_id]).T @ S_theta[gp_id] / n_gp
 
@@ -163,7 +169,8 @@ def compute_phase_average_stress_localizations(strain_localization, mat_stiffnes
     combo_strain_loc0, combo_strain_loc1 = None, None
     stress_localization0, stress_localization1, _, _ = construct_stress_localization_phases(
         strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, combo_strain_loc0, combo_strain_loc1, mesh)
-    average_stress_localization0, average_stress_localization1 = volume_average(stress_localization0), volume_average(stress_localization1)
+    average_stress_localization0, average_stress_localization1 = \
+        volume_average(stress_localization0), volume_average(stress_localization1)
     return average_stress_localization0, average_stress_localization1
 
 
@@ -174,15 +181,13 @@ def compute_tabular_data_for_ms(ms_id, temperatures):
     :param ms_id: id of the microstructure
     :param temperatures: list of sampling temperatures
     """
-    file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[ms_id])
+    file_name, data_path, temp1, temp2, n_tests, sampling_alphas = \
+        itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests', 'sampling_alphas')(microstructures[ms_id])
     sample_temperatures = np.linspace(temp1, temp2, num=n_tests)
-    sample_alphas = np.linspace(0, 1, num=n_tests)
     mesh, samples = read_h5(file_name, data_path, sample_temperatures)
     return compute_tabular_data(samples, mesh, temperatures)
 
 
-#@jit(nopython=True, cache=True, parallel=True, nogil=True)
 def compute_tabular_data(samples, mesh, temperatures):
     """
     Compute tabular data for a given list of temperatures
@@ -235,17 +240,19 @@ def compute_tabular_data(samples, mesh, temperatures):
             E01 = np.ascontiguousarray(np.concatenate((E0, E1), axis=-1))
 
             sampling_C = np.stack((samples[id0]['mat_stiffness'], samples[id1]['mat_stiffness'])).transpose([1, 0, 2, 3])
-            sampling_eps = np.stack((samples[id0]['mat_thermal_strain'], samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
+            sampling_eps = np.stack((samples[id0]['mat_thermal_strain'],
+                                     samples[id1]['mat_thermal_strain'])).transpose([1, 0, 2, 3])
 
             # interpolated quantities using an implicit interpolation scheme with four DOF
             approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
-            E, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes, n_gp)
+            E, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id,
+                                                 n_gauss, strain_dof, n_modes, n_gp)
             S = construct_stress_localization(E, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
 
         # Compute NTFA matrices
         C_bar[:, :, idx], tau_theta[:, idx], A_bar[:, :, idx], tau_xi[:, idx], D_xi[:, :, idx], D_theta[idx] = \
             compute_ntfa_matrices(E, S, plastic_modes, ref_eps, mesh)
-        
+
         # Compute phase average stresses
         A0_full, A1_full = compute_phase_average_stress_localizations(E, ref_C, ref_eps, plastic_modes, mesh)
         A0[:, :, idx], A1[:, :, idx] = A0_full, A1_full
@@ -282,17 +289,17 @@ def save_tabular_data(file_name, data_path, temperatures, C_bar, tau_theta, A_ba
             del file[ntfa_path]
         dset_ntfa = dset.create_group(ntfa_path)
         [dset_ntfa.attrs.create(key, value) for key, value in dset_sim.attrs.items()]
-        dset_temperatures = dset_ntfa.create_dataset('temperatures', data=temperatures)
-        dset_C_bar = dset_ntfa.create_dataset('C_bar', data=C_bar)
-        dset_tau_theta = dset_ntfa.create_dataset('tau_theta', data=tau_theta)
-        dset_A_bar = dset_ntfa.create_dataset('A_bar', data=A_bar)
-        dset_tau_xi = dset_ntfa.create_dataset('tau_xi', data=tau_xi)
-        dset_D_xi = dset_ntfa.create_dataset('D_xi', data=D_xi)
-        dset_D_theta = dset_ntfa.create_dataset('D_theta', data=D_theta)
-        dset_A0 = dset_ntfa.create_dataset('A0', data=A0)
-        dset_A1 = dset_ntfa.create_dataset('A1', data=A1)
-        dset_C0 = dset_ntfa.create_dataset('C0', data=C0)
-        dset_C1 = dset_ntfa.create_dataset('C1', data=C1)
+        dset_ntfa.create_dataset('temperatures', data=temperatures)
+        dset_ntfa.create_dataset('C_bar', data=C_bar)
+        dset_ntfa.create_dataset('tau_theta', data=tau_theta)
+        dset_ntfa.create_dataset('A_bar', data=A_bar)
+        dset_ntfa.create_dataset('tau_xi', data=tau_xi)
+        dset_ntfa.create_dataset('D_xi', data=D_xi)
+        dset_ntfa.create_dataset('D_theta', data=D_theta)
+        dset_ntfa.create_dataset('A0', data=A0)
+        dset_ntfa.create_dataset('A1', data=A1)
+        dset_ntfa.create_dataset('C0', data=C0)
+        dset_ntfa.create_dataset('C1', data=C1)
 
 
 def read_tabular_data(file_name, data_path):
