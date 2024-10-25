@@ -3,35 +3,12 @@ Plot the strain localization operator E and stress localization operator S at di
 """
 #%%
 from operator import itemgetter
-
+import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from microstructures import *
 from utilities import read_h5, construct_stress_localization
 
-################
-
-
-
-    stress_localization = np.empty_like(strain_localization)
-    strain_localization_transp = ...
-    I = np.eye(strain_dof)
-    for gp_id in prange(strain_localization.shape[0]):
-        phase_id = mat_id[gp_id // n_gauss]
-        stress_localization[gp_id] = strain_localization_transp[gp_id] @ mat_stiffness[phase_id] @ (plastic_modes - eigen_strains)
-    A = volume_average(stress_localization)
-    
-    D0 = volume_average(inner_product((plastic_modes - eigen_strains), eigen_strains))
-
-    K0 = -volume_average(inner_product(plastic_modes, K @ eigen_strains))
-    K = k * K0
-
-    D = D0 + K
-    
-    R = volume_average(thermal_stresses @ (plastic_modes - eigen_strains)) / delta_theta
-
-
-###########
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(
