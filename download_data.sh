@@ -10,3 +10,4 @@ wget $OPTIONS $DATASET/11 -O input/octahedron_combo_32x32x32.h5  # microstructur
 wget $OPTIONS $DATASET/2 -O input/random_rve_vol20.h5  # microstructures[7]
 wget $OPTIONS $DATASET/5 -O input/random_rve_vol40.h5  # microstructures[8]
 wget $OPTIONS $DATASET/1 -O input/random_rve_vol60.h5  # microstructures[9]
+
