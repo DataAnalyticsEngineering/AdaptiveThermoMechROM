@@ -28,8 +28,7 @@ All necessary data can be downloaded from [DaRUS](https://darus.uni-stuttgart.de
 ## How to use?
 
 The provided code is independent of direct numerical simulators, i.e. it expects DNS results to be stored in a HDF5 file with a
-structure that follows [`input/h5_data_structure.pdf`](input/h5_data_structure.pdf). It is assumed that DNSs are coming from voxel-based thermomechanical solvers
-with a voxel following the node numbering as in [`input/vtk_node_numbering.png`](input/vtk_node_numbering.png) (VTK_VOXEL=11).
+structure that follows [`input/h5_data_structure.pdf`](input/h5_data_structure.pdf). It is assumed that DNSs are coming from voxel-based thermomechanical solvers with a voxel following the node numbering as in [`input/vtk_node_numbering.png`](input/vtk_node_numbering.png) (VTK_VOXEL=11).
 
 Note that extensions to directly calling a direct numerical simulator or use a different element type require a slight
 modification from interested users. This was not already included here to ensure having a standalone code that is able to
@@ -37,13 +36,11 @@ reproduce results from the publication cited below.
 
 For details about the setup of the following examples, please refer to the cited publication.
 
-- [`eg0_affine_thermoelastic_solver.py`](eg0_affine_thermoelastic_solver.py):
-  This module goes throw all microstructure files, given in [`microstructures.py`](microstructures.py) then it tries to load all available data for all
-  given temperatures and does some sanity checks to ensure that the provided results are consistent.
+- [`eg00_affine_thermoelastic_solver.py`](eg0_affine_thermoelastic_solver.py):
+  This module goes throw all microstructure files, given in [`microstructures.py`](microstructures.py) then it tries to load all available data for all given temperatures and does some sanity checks to ensure that the provided results are consistent.
 
 - [`eg1_approximation_of_mat_properties.py`](eg1_approximation_of_mat_properties.py):
-  Approximate copper and tungsten temperature-dependent material properties given in [`material_parameters.py`](material_parameters.py) using various
-  approaches.
+  Approximate copper and tungsten temperature-dependent material properties given in [`material_parameters.py`](material_parameters.py) using various approaches.
 
 - [`eg2_compare_approximations.py`](eg2_compare_approximations.py):
   Given DNSs at only two temperatures, compare the different interpolation schemes.
@@ -52,8 +49,7 @@ For details about the setup of the following examples, please refer to the cited
   Build a hierarchy of samples such that approximation error is reduced.
 
 - [`eg4_hierarchical_sampling_efficient.py`](eg4_hierarchical_sampling_efficient.py):
-  Same as [`eg3_hierarchical_sampling.py`](eg3_hierarchical_sampling.py) but more efficient due to exploitation of affine structure of the proposed interpolation
-  scheme.
+  Same as [`eg3_hierarchical_sampling.py`](eg3_hierarchical_sampling.py) but more efficient due to exploitation of affine structure of the proposed interpolation scheme.
 
 - [`eg5_FFANN.py`](eg5_FFANN.py):
   Train feed-forward artificial neural networks to approximate the homogenized response with different number of samples.
