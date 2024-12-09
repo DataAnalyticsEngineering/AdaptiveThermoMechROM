@@ -15,11 +15,11 @@ rc('text', usetex=True)
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[-8])
+                                                                          'sampling_alphas')(microstructures[0])
 print(file_name, '\t', data_path)
 
 n_loading_directions = 1
-n_hierarchical_levels = 2
+n_hierarchical_levels = 5
 test_temperatures = np.linspace(temp1, temp2, num=n_tests)
 test_alphas = np.linspace(0, 1, num=n_tests)
 

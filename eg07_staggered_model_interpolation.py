@@ -11,7 +11,7 @@ from microstructures import *
 
 # Offline stage: Load precomputed optimal data
 load_start = time.time()
-ms_id = 6
+ms_id = 0
 level = 4
 file_name, data_path, temp1, temp2, n_samples, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
                                                                             'sampling_alphas')(microstructures[ms_id])

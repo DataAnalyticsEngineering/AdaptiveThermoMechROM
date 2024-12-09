@@ -15,7 +15,7 @@ rc('text', usetex=True)
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
-                                                                          'sampling_alphas')(microstructures[-8])
+                                                                          'sampling_alphas')(microstructures[0])
 print(file_name, '\t', data_path)
 
 n_loading_directions = 10
