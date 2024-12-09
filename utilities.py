@@ -1,5 +1,4 @@
 import contextlib
-
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +6,7 @@ import numpy.linalg as la
 import scipy.sparse
 from numba import jit, prange
 from sympy import symbols, lambdify, Array
+from microstructures import *
 
 plt.rcParams.update({
     'font.size': 8,
@@ -21,6 +21,7 @@ plt.rcParams.update({
 
 cm = 1 / 2.54  # centimeters in inches
 
+
 def plot_and_save(xlabel, ylabel, fig_name, xlim=None, ylim=None, loc='best'):
     gca = plt.gca()
     gca.set_xlim(xlim)
@@ -33,11 +34,13 @@ def plot_and_save(xlabel, ylabel, fig_name, xlim=None, ylim=None, loc='best'):
     plt.savefig(f'output/{fig_name}.png')
     plt.show()
 
+
 def ecdf(x):
     """empirical cumulative distribution function"""
     # plt.step(*ecdf(np.asarray([1, 1, 2, 3, 4])), where='post')
     n = len(x)
     return [np.hstack((np.min(x), np.sort(np.squeeze(np.asarray(x))))), np.hstack((0, np.linspace(1 / n, 1, n)))]
+
 
 def voxel_quadrature(discretisation, strain_dof=6, nodal_dof=3):
     """
@@ -90,7 +93,8 @@ def voxel_quadrature(discretisation, strain_dof=6, nodal_dof=3):
 
     return gradient_operators, integration_weights
 
-def read_h5(file_name, data_path, temperatures, get_mesh=True):
+
+def read_h5(file_name, data_path, temperatures, get_mesh=True, dummy_plastic_data=True):
     """
     Read an H5 file that contains responses of simulated microstructures
     :param file_name: e.g. "input/simple_3d_rve_combo.h5"
@@ -100,7 +104,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
         mesh: dictionary that contains microstructural details such as volume fraction, voxel type, ...
         samples: list of simulation results at each temperature
     """
-    axis_order = [0, 2, 1]  # n_gauss x strain_dof x 7 (7=6 mechanical + 1 thermal expansion)
+    axis_order = [0, 2, 1]  # n_gauss x strain_dof x (n_modes + 7) (n_modes + 7 = 6 mechanical + 1 thermal expansion + n_modes plastic)
 
     samples = []
     with h5py.File(file_name, 'r') as file:
@@ -131,7 +135,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
             sample['combo_strain_loc0'] = None
             sample['combo_strain_loc1'] = None
 
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(Exception):  # used because some strain localizations are deleted to make h5 files smaller
                 sample['strain_localization'] = file[f'{data_path}/localization_strain_{temperature:07.2f}'][:].transpose(
                     axis_order)
 
@@ -141,6 +145,17 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
 
                     sample['combo_strain_loc1'] = \
                         file[f'{data_path}/localization_strain1_{temperature:07.2f}'][:].transpose(axis_order)
+
+                if 'plastic_modes' in file[f'{data_path}'].keys():
+                    sample['plastic_modes'] = file[f'{data_path}/plastic_modes'][:].transpose(axis_order)
+                else:
+                    sample['plastic_modes'] = np.zeros((*sample['strain_localization'].shape[:2], 0))
+                    # sample['plastic_modes'] = create_dummy_plastic_modes(*sample['strain_localization'].shape[:2], N_modes=13)
+                    # sample['strain_localization'] = create_dummy_plastic_strain_localization(sample['strain_localization'], N_modes=13)
+                    # if mesh['vox_type'] == 'combo':
+                    #     sample['combo_strain_loc0'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc0'], N_modes=13)
+                    #     sample['combo_strain_loc1'] = create_dummy_plastic_strain_localization(sample['combo_strain_loc1'], N_modes=13)
+
         if get_mesh:
             mesh['volume_fraction'] = file[f'{data_path}'].attrs['combo_volume_fraction']
             mesh['combo_discretisation'] = np.int64(file[f'{data_path}'].attrs['combo_discretisation'])
@@ -198,6 +213,7 @@ def read_h5(file_name, data_path, temperatures, get_mesh=True):
 
     return mesh, samples
 
+
 def verify_data(mesh, sample):
     """
     Sanity check to see if it is possible to reconstruct stress, strain fields and effective properties
@@ -210,25 +226,31 @@ def verify_data(mesh, sample):
     eff_stiffness, eff_thermal_strain = sample['eff_stiffness'], sample['eff_thermal_strain']
     mat_thermal_strain, mat_stiffness = sample['mat_thermal_strain'], sample['mat_stiffness']
     combo_strain_loc0, combo_strain_loc1 = sample['combo_strain_loc0'], sample['combo_strain_loc1']
+    plastic_modes = sample['plastic_modes']
 
     macro_strain = np.asarray([3, .7, 1.5, 0.5, 2, 1])
-    zeta = np.hstack((macro_strain, 1))  # 1 accounts for thermoelastic strain, more details in the paper cited in readme.md
+    xi = np.ones(plastic_modes.shape[-1])
+    # 1 accounts for thermoelastic strain, more details in the paper cited in readme.md
+    # xi accounts for plastic mode activations
+    zeta = np.hstack((macro_strain, 1, xi))
 
     strain = macro_strain + np.einsum('ijk,k', strain_localization, zeta, optimize='optimal')
 
-    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, mesh['mat_id'],
-                                                        mesh['n_gauss'], mesh['strain_dof'])
+    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes,
+                                                        mesh['mat_id'], mesh['n_gauss'], mesh['strain_dof'])
     eff_stiffness_from_localization = volume_average(stress_localization)
 
     stress = np.einsum('ijk,k', stress_localization, zeta, optimize='optimal')
     residual = compute_residual(stress, mesh['dof'], mesh['n_elements'], mesh['element_dof'], mesh['n_gauss'],
                                 mesh['assembly_idx'], mesh['gradient_operators_times_w'])
 
-    abs_err = eff_stiffness_from_localization - np.hstack((eff_stiffness, -np.reshape(eff_stiffness @ eff_thermal_strain,
-                                                                                      (-1, 1))))
+    eff_thermoelastic_stiffness = eff_stiffness_from_localization[:, :7]
+    abs_err = eff_thermoelastic_stiffness - np.hstack((eff_stiffness, -np.reshape(eff_stiffness @ eff_thermal_strain,
+                                                                                  (-1, 1))))
+    # - C @ eff_plastic_strain # eff_plastic_strain is not stored because it depends on the macroscopic strain
     err = lambda x, y: np.mean(la.norm(x - y) / la.norm(y))
 
-    assert err(eff_stiffness_from_localization,
+    assert err(eff_thermoelastic_stiffness,
                np.vstack((eff_stiffness, -eff_stiffness @ eff_thermal_strain)).T) < convergence_tolerance, \
         'incompatibility between stress_localization and effective quantities'
 
@@ -239,7 +261,7 @@ def verify_data(mesh, sample):
         'stress field is not statically admissible'
 
     stress_localization0, stress_localization1, combo_stress_loc0, combo_stress_loc1 = construct_stress_localization_phases(
-        strain_localization, mat_stiffness, mat_thermal_strain, combo_strain_loc0, combo_strain_loc1, mesh)
+        strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, combo_strain_loc0, combo_strain_loc1, mesh)
 
     combo_stress0 = np.einsum('ijk,k', combo_stress_loc0, zeta, optimize='optimal') if combo_stress_loc0 is not None else None
     combo_stress1 = np.einsum('ijk,k', combo_stress_loc1, zeta, optimize='optimal') if combo_stress_loc1 is not None else None
@@ -255,6 +277,13 @@ def verify_data(mesh, sample):
     assert err(average_stress, \
                vol_frac0 * average_stress_0 + vol_frac1 * average_stress_1) < convergence_tolerance, \
         'phasewise volume average is not admissible'
+
+    plastic_modes = sample['plastic_modes']
+    n_modes = plastic_modes.shape[-1]
+    gramian = volume_average(np.einsum('ijk,ijl->ikl', plastic_modes, plastic_modes))
+    assert np.allclose(gramian, np.diag(np.diag(gramian))), 'plastic modes are not orthogonal'
+    assert np.allclose([volume_average(norm_2(plastic_modes[:,:,i])) for i in range(n_modes)], vol_frac0), 'plastic modes are not normalized correctly'
+
 
 def compute_residual(stress, dof, n_elements, element_dof, n_gauss, assembly_idx, gradient_operators_times_w):
     """
@@ -279,12 +308,14 @@ def compute_residual(stress, dof, n_elements, element_dof, n_gauss, assembly_idx
             residuals[assembly_idx[element_id], idx] += elmental_force
     return residuals
 
+
 def compute_residual_efficient(stress, global_gradient):
     stresses = stress
     if not isinstance(stress, list):
         stresses = [stress]
 
     return (np.vstack([x.flatten() for x in stresses]) @ global_gradient).T
+
 
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
 def compute_err_indicator(stress_loc, gradient_operators_times_w, dof, n_gauss, assembly_idx):
@@ -309,15 +340,19 @@ def compute_err_indicator(stress_loc, gradient_operators_times_w, dof, n_gauss, 
     # return la.norm(err_indicator)
     return err_indicator
 
+
 def compute_err_indicator_efficient(stress_loc, global_gradient):
     return global_gradient.T @ stress_loc.reshape(global_gradient.shape[0], -1)
 
-# @jit(nopython=True, cache=True, parallel=True, nogil=True)
+
+@jit(nopython=True, cache=True, parallel=True, nogil=True)
 def cheap_err_indicator(stress_loc, global_gradient):
     return la.norm(global_gradient.T @ np.sum(stress_loc, -1).flatten())
 
+
 @jit(nopython=True, cache=True, parallel=True, nogil=True)
-def construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, mat_id, n_gauss, strain_dof):
+def construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, mat_id, n_gauss,
+                                  strain_dof):
     """
     Construct stress localization operator out of the strain localization one.
     :param strain_localization: strain localization 3D array
@@ -331,11 +366,12 @@ def construct_stress_localization(strain_localization, mat_stiffness, mat_therma
     I = np.eye(strain_dof)
     for gp_id in prange(strain_localization.shape[0]):
         phase_id = mat_id[gp_id // n_gauss]
-        P = np.hstack((-I, mat_thermal_strain[phase_id]))
+        P = np.hstack((-I, mat_thermal_strain[phase_id], plastic_modes[gp_id]))
         stress_localization[gp_id] = mat_stiffness[phase_id] @ (strain_localization[gp_id] - P)
     return stress_localization
 
-def construct_stress_localization_phases(strain_localization, mat_stiffness, mat_thermal_strain, combo_strain_loc0,
+
+def construct_stress_localization_phases(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes, combo_strain_loc0,
                                          combo_strain_loc1, mesh):
     """
     Same as construct_stress_localization() but it returns stress localization operators for each material phase
@@ -354,7 +390,8 @@ def construct_stress_localization_phases(strain_localization, mat_stiffness, mat
     n_gauss = mesh['n_gauss']
     idx0 = np.repeat(mesh['mat_id'] == 0, n_gauss)
     idx1 = np.repeat(mesh['mat_id'] == 1, n_gauss)
-    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, mesh['mat_id'],
+    stress_localization = construct_stress_localization(strain_localization, mat_stiffness, mat_thermal_strain, plastic_modes,
+                                                        mesh['mat_id'],
                                                         mesh['n_gauss'], mesh['strain_dof'])
     stress_localization0 = stress_localization[idx0] if np.any(idx0) else np.zeros((1, *stress_localization.shape[1:]))
     stress_localization1 = stress_localization[idx1] if np.any(idx1) else np.zeros((1, *stress_localization.shape[1:]))
@@ -368,9 +405,12 @@ def construct_stress_localization_phases(strain_localization, mat_stiffness, mat
         for idx in range(len(mesh['combo_idx'])):
             stiffness_idx = idx + 2
             P = np.hstack([-I, mat_thermal_strain[stiffness_idx]])
+            # TODO: do we need separate plastic modes for each material phase?
+            P = np.hstack((-I, mat_thermal_strain[stiffness_idx], plastic_modes[stiffness_idx // 2]))
             combo_stress_loc0[idx] = mat_stiffness[0] @ combo_strain_loc0[idx] - mat_stiffness[stiffness_idx] @ P
             combo_stress_loc1[idx] = mat_stiffness[1] @ combo_strain_loc1[idx] - mat_stiffness[stiffness_idx] @ P
     return stress_localization0, stress_localization1, combo_stress_loc0, combo_stress_loc1
+
 
 def volume_average_phases(stress0, stress1, combo_stress0, combo_stress1, mesh):
     """
@@ -400,6 +440,30 @@ def volume_average_phases(stress0, stress1, combo_stress0, combo_stress1, mesh):
 
     return average_stress_0, average_stress_1
 
+
 def volume_average(field):
-    """ Volume average of a given field in case of identical weights that sum to one """
+    """
+    Volume average of a given field in case of identical weights that sum to one
+    :param field: array with shape (n_integration_points, ...)
+    """
     return np.mean(field, axis=0)
+
+
+def inner_product(a, b):
+    """
+    Compute inner product between tensor fields a and b in case of identical weights that sum to one
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    assert a.shape == b.shape
+    summation_axes = tuple(ax for ax in range(1, a.ndim))
+    return np.sum(a * b, axis=summation_axes)
+
+
+def norm_2(a):
+    """
+    Compute euclidean norm of tensor field a in case of identical weights that sum to one
+    :param a: array with shape (n_integration_points, ...)
+    :param b: array with same shape as b
+    """
+    return np.sqrt(inner_product(a, a))

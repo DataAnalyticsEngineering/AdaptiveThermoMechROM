@@ -3,11 +3,12 @@ Plot the strain localization operator E and stress localization operator S at di
 """
 #%%
 from operator import itemgetter
-
+import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from microstructures import *
 from utilities import read_h5, construct_stress_localization
+
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter(

@@ -7,8 +7,11 @@ import numpy.linalg as la
 
 from interpolate_fluctuation_modes import interpolate_fluctuation_modes
 from microstructures import *
+from material_parameters import *
 from optimize_alpha import opt1, opt2, opt4, naive
 from utilities import read_h5, construct_stress_localization, volume_average, compute_residual_efficient
+from matplotlib import rc
+rc('text', usetex=True) 
 
 np.random.seed(0)
 file_name, data_path, temp1, temp2, n_tests, sampling_alphas = itemgetter('file_name', 'data_path', 'temp1', 'temp2', 'n_tests',
@@ -26,11 +29,11 @@ n_gauss = mesh['n_gauss']
 strain_dof = mesh['strain_dof']
 global_gradient = mesh['global_gradient']
 n_gp = mesh['n_integration_points']
-n_modes = ref[0]['strain_localization'].shape[-1]
+n_modes = ref[0]['plastic_modes'].shape[-1]
 
 _, samples = read_h5(file_name, data_path, [temp1, temp2], get_mesh=False)
 
-strains = np.random.normal(size=(n_loading_directions, mesh['strain_dof']))
+strains = np.random.normal(size=(n_loading_directions, strain_dof))
 strains /= la.norm(strains, axis=1)[:, None]
 
 n_approaches = 5
@@ -54,38 +57,46 @@ for idx, alpha in enumerate(test_alphas):
     Eref = ref[idx]['strain_localization']
     ref_C = ref[idx]['mat_stiffness']
     ref_eps = ref[idx]['mat_thermal_strain']
+    ref_C_ = np.stack(([stiffness_cu(temperature), stiffness_wsc(temperature)]))
+    ref_eps_ = np.expand_dims(np.stack(([thermal_strain_cu(temperature), thermal_strain_wsc(temperature)])), axis=2)
+    print(np.linalg.norm(ref_C - ref_C_), np.linalg.norm(ref_eps - ref_eps_))
+    plastic_modes = ref[idx]['plastic_modes']
     normalization_factor_mech = ref[idx]['normalization_factor_mech']
 
-    Sref = construct_stress_localization(Eref, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Sref = construct_stress_localization(Eref, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSref = volume_average(Sref)
 
     # interpolated quantities using an explicit interpolation scheme with one DOF
     approx_C, approx_eps = naive(alpha, sampling_C, sampling_eps, ref_C, ref_eps)
     Enaive = interpolate_temp(E0, E1)
-    Snaive = construct_stress_localization(Enaive, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Snaive = construct_stress_localization(Enaive, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSnaive = volume_average(Snaive)
 
     # interpolated quantities using an explicit interpolation scheme with one DOF
-    Eopt0, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, mat_id, n_gauss, strain_dof, n_modes, n_gp)
-    Sopt0 = construct_stress_localization(Eopt0, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Eopt0, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                             n_gp)
+    Sopt0 = construct_stress_localization(Eopt0, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSopt0 = volume_average(Sopt0)
 
     # interpolated quantities using an implicit interpolation scheme with one DOF
     approx_C, approx_eps = opt1(sampling_C, sampling_eps, ref_C, ref_eps)
-    Eopt1, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, mat_id, n_gauss, strain_dof, n_modes, n_gp)
-    Sopt1 = construct_stress_localization(Eopt1, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Eopt1, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                             n_gp)
+    Sopt1 = construct_stress_localization(Eopt1, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSopt1 = volume_average(Sopt1)
 
     # interpolated quantities using an implicit interpolation scheme with two DOF
     approx_C, approx_eps = opt2(sampling_C, sampling_eps, ref_C, ref_eps)
-    Eopt2, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, mat_id, n_gauss, strain_dof, n_modes, n_gp)
-    Sopt2 = construct_stress_localization(Eopt2, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Eopt2, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                             n_gp)
+    Sopt2 = construct_stress_localization(Eopt2, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSopt2 = volume_average(Sopt2)
 
     # interpolated quantities using an implicit interpolation scheme with four DOF
     approx_C, approx_eps = opt4(sampling_C, sampling_eps, ref_C, ref_eps)
-    Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, mat_id, n_gauss, strain_dof, n_modes, n_gp)
-    Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, mat_id, n_gauss, strain_dof)
+    Eopt4, _ = interpolate_fluctuation_modes(E01, approx_C, approx_eps, plastic_modes, mat_id, n_gauss, strain_dof, n_modes,
+                                             n_gp)
+    Sopt4 = construct_stress_localization(Eopt4, ref_C, ref_eps, plastic_modes, mat_id, n_gauss, strain_dof)
     effSopt4 = volume_average(Sopt4)
 
     err = lambda x, y: np.mean(la.norm(x - y, axis=(-1, -2)) / la.norm(y, axis=(-1, -2))) * 100
@@ -97,7 +108,7 @@ for idx, alpha in enumerate(test_alphas):
                          err(effSopt2, effSref), err(effSopt4, effSref)]
 
     for strain_idx, strain in enumerate(strains):
-        zeta = np.hstack((strain, 1))
+        zeta = np.hstack((strain, 1, np.ones(plastic_modes.shape[-1])))
 
         eff_stress_ref = effSref @ zeta
         err_eff_stress[:, idx * n_loading_directions + strain_idx] = \
@@ -112,7 +123,7 @@ for idx, alpha in enumerate(test_alphas):
         stress_opt4 = np.einsum('ijk,k', Sopt4, zeta, optimize='optimal')
 
         residuals = compute_residual_efficient([stress_naive, stress_opt0, stress_opt1, stress_opt2, stress_opt4],
-                                               mesh['global_gradient'])
+                                               global_gradient)
 
         err_f[:, idx * n_loading_directions + strain_idx] = la.norm(residuals, np.inf, axis=0) / normalization_factor_mech * 100
 
